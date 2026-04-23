@@ -8,7 +8,8 @@ import { CONTENT, DISTRICTS, type Lang } from "@/lib/content";
 /* ── Types ──────────────────────────────────────────────────────────── */
 type AreaType = "corporation" | "council" | "rural";
 type Gender   = "male" | "female";
-type ValMode  = "manual" | "estimate";
+type ValMode  = "direct" | "area";
+type Unit     = "sqmt" | "sqft" | "guntha" | "acre";
 
 interface CalcResult {
   propValue: number;
@@ -24,11 +25,28 @@ interface CalcResult {
   grandTotal: number;
 }
 
-/* ── Average Ready-Reckoner rates (₹ / sqm) ────────────────────────── */
-const AVG_RATES: Partial<Record<string, number>> = {
-  Pune:    75000,
-  Solapur: 35000,
+/* ── Unit conversion (to Sq. Meter) ────────────────────────────────── */
+//  1 Guntha = 101.17 Sq. Mt
+//  1 Sq. Ft = 1/10.76 Sq. Mt  →  1 Sq. Mt = 10.76 Sq. Ft
+//  1 Acre   = 40 Gunthas = 40 × 101.17 = 4046.8 Sq. Mt
+const TO_SQM: Record<Unit, number> = {
+  sqmt:   1,
+  sqft:   1 / 10.76,      // ≈ 0.092937
+  guntha: 101.17,
+  acre:   40 * 101.17,    // 4046.8
 };
+
+/* ── Average rates ₹/sqm for known districts ───────────────────────── */
+const AVG_RATES_SQM: Partial<Record<string, number>> = {
+  Pune:    75_000,
+  Solapur: 35_000,
+};
+
+/* ── Format area number based on unit ──────────────────────────────── */
+function fmtArea(n: number, u: Unit): string {
+  const decimals = u === "acre" ? 4 : u === "guntha" ? 3 : 2;
+  return parseFloat(n.toFixed(decimals)).toString();
+}
 
 /* ── Stamp duty logic ───────────────────────────────────────────────── */
 function calculate(value: number, area: AreaType, gender: Gender): CalcResult {
@@ -43,13 +61,13 @@ function calculate(value: number, area: AreaType, gender: Gender): CalcResult {
   const totalDutyRate = baseRate + (metroCessRate ?? 0) + (lbtRate ?? 0);
   const totalDutyAmt  = baseAmt + (metroCessAmt ?? 0) + (lbtAmt ?? 0);
   const rawReg        = value * 0.01;
-  const regFeeAmt     = Math.min(rawReg, 30000);
+  const regFeeAmt     = Math.min(rawReg, 30_000);
 
   return {
     propValue: value, isFemale,
     baseRate, baseAmt, metroCessAmt, lbtAmt,
     totalDutyRate, totalDutyAmt,
-    regFeeAmt, regFeeCapped: rawReg > 30000,
+    regFeeAmt, regFeeCapped: rawReg > 30_000,
     grandTotal: totalDutyAmt + regFeeAmt,
   };
 }
@@ -94,14 +112,15 @@ export default function Calculator() {
   const [lang, setLang]           = useState<Lang>("en");
   const c  = CONTENT[lang];
   const cc = c.calc;
-  const isMr   = lang === "mr";
-  const hFont  = isMr ? "font-devanagari" : "font-sans";
+  const isMr  = lang === "mr";
+  const hFont = isMr ? "font-devanagari" : "font-sans";
 
   /* ── Form state ── */
-  const [valMode, setValMode]     = useState<ValMode>("manual");
-  const [rawValue, setRawValue]   = useState("");
-  const [areaStr, setAreaStr]     = useState("");
-  const [rateStr, setRateStr]     = useState("");
+  const [valMode, setValMode]     = useState<ValMode>("direct");
+  const [rawValue, setRawValue]   = useState("");       // direct mode
+  const [areaStr, setAreaStr]     = useState("");       // area mode
+  const [rateStr, setRateStr]     = useState("");       // area mode
+  const [unit, setUnit]           = useState<Unit>("sqmt");
 
   const [district, setDistrict]   = useState<(typeof DISTRICTS)[0] | null>(null);
   const [distQuery, setDistQuery] = useState("");
@@ -110,7 +129,7 @@ export default function Calculator() {
   const [gender, setGender]       = useState<Gender>("male");
   const [surveyNo, setSurveyNo]   = useState("");
 
-  /* ── Lead capture state ── */
+  /* ── Lead state ── */
   const [saving, setSaving]       = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
 
@@ -125,14 +144,34 @@ export default function Calculator() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  /* ── Switch to Quick Estimate when district has an avg rate ── */
+  /* ── When district changes: pre-fill rate for known districts ── */
   useEffect(() => {
-    if (district && AVG_RATES[district.en]) {
-      setRateStr(String(AVG_RATES[district.en]));
-      setAreaStr("");
-      setValMode("estimate");
+    const sqmRate = district ? AVG_RATES_SQM[district.en] : undefined;
+    if (sqmRate) {
+      setRateStr(String(Math.round(sqmRate * TO_SQM[unit])));
+      setValMode("area");
     }
-  }, [district]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [district]); // intentionally exclude `unit` — rate is re-derived on unit change
+
+  /* ── Unit change: auto-convert area AND rate ── */
+  const handleUnitChange = useCallback((newUnit: Unit) => {
+    const ratio = TO_SQM[newUnit] / TO_SQM[unit]; // scale factor old→new
+
+    // Convert area
+    const a = parseFloat(areaStr);
+    if (!isNaN(a) && a > 0) {
+      setAreaStr(fmtArea(a / ratio, newUnit));
+    }
+
+    // Convert rate (₹/oldUnit → ₹/newUnit)
+    const r = parseFloat(rateStr.replace(/,/g, ""));
+    if (!isNaN(r) && r > 0) {
+      setRateStr(String(Math.round(r * ratio)));
+    }
+
+    setUnit(newUnit);
+  }, [unit, areaStr, rateStr]);
 
   /* ── Filtered districts ── */
   const filteredDist = useMemo(() => {
@@ -144,10 +183,10 @@ export default function Calculator() {
 
   /* ── Effective property value ── */
   const propValue = useMemo<number | null>(() => {
-    if (valMode === "estimate") {
+    if (valMode === "area") {
       const a = parseFloat(areaStr);
       const r = parseFloat(rateStr.replace(/,/g, ""));
-      return !isNaN(a) && a > 0 && !isNaN(r) && r > 0 ? a * r : null;
+      return (!isNaN(a) && a > 0 && !isNaN(r) && r > 0) ? a * r : null;
     }
     const n = parseFloat(rawValue.replace(/,/g, ""));
     return !isNaN(n) && n > 0 ? n : null;
@@ -158,6 +197,20 @@ export default function Calculator() {
     () => (propValue ? calculate(propValue, areaType, gender) : null),
     [propValue, areaType, gender]
   );
+
+  /* ── Sq-meter equivalent for display ── */
+  const sqmEquiv = useMemo(() => {
+    if (unit === "sqmt") return null;
+    const a = parseFloat(areaStr);
+    if (isNaN(a) || a <= 0) return null;
+    return a * TO_SQM[unit];
+  }, [unit, areaStr]);
+
+  /* ── Rate-per-unit label ── */
+  const unitName = cc.units[unit];
+  const ratePerLabel = isMr
+    ? `प्रति ${unitName} दर (₹)`
+    : `Rate per ${unitName} (₹)`;
 
   /* ── Lead capture ── */
   const handleCalculate = useCallback(async () => {
@@ -173,6 +226,7 @@ export default function Calculator() {
           surveyNo: surveyNo || null,
           propValue: result.propValue,
           gender,
+          unit: valMode === "area" ? unit : null,
         }),
       });
       setLeadSaved(true);
@@ -182,10 +236,7 @@ export default function Calculator() {
     } finally {
       setSaving(false);
     }
-  }, [result, saving, district, areaType, surveyNo, gender]);
-
-  /* ── Active avg rate for display ── */
-  const avgRate = district ? AVG_RATES[district.en] : undefined;
+  }, [result, saving, district, areaType, surveyNo, gender, unit, valMode]);
 
   /* ─────────────────────────────────────── RENDER ── */
   return (
@@ -222,26 +273,67 @@ export default function Calculator() {
           {/* ── LEFT: Form ── */}
           <div className="space-y-6">
 
-            {/* Property Value / Quick Estimate */}
+            {/* ── Property Value section ── */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className={`text-sm font-semibold text-oxblood ${hFont}`}>{cc.propValue}</label>
-                {avgRate && (
-                  <button
-                    onClick={() => setValMode(valMode === "estimate" ? "manual" : "estimate")}
-                    className={`text-xs font-semibold border rounded-full px-2.5 py-0.5 transition-colors ${valMode === "estimate" ? "bg-gold/15 text-gold border-gold/40" : "text-gold/70 border-gold/30 hover:text-gold"}`}
-                  >
-                    {valMode === "estimate" ? cc.switchToManual : cc.quickEstimateLabel}
-                  </button>
-                )}
+              <label className={`block text-sm font-semibold text-oxblood mb-2 ${hFont}`}>
+                {cc.propValue}
+              </label>
+
+              {/* Mode tabs */}
+              <div className="flex rounded-xl border border-gold/30 overflow-hidden mb-4 text-xs font-semibold">
+                <button
+                  onClick={() => setValMode("direct")}
+                  className={`flex-1 py-2.5 transition-colors ${valMode === "direct" ? "bg-oxblood text-gold" : "bg-white text-ink/50 hover:text-ink"}`}
+                >
+                  <span className={hFont}>{cc.enterValue}</span>
+                </button>
+                <span className="w-px bg-gold/25" />
+                <button
+                  onClick={() => setValMode("area")}
+                  className={`flex-1 py-2.5 transition-colors ${valMode === "area" ? "bg-oxblood text-gold" : "bg-white text-ink/50 hover:text-ink"}`}
+                >
+                  <span className={hFont}>{cc.fromArea}</span>
+                </button>
               </div>
 
-              {valMode === "estimate" && avgRate ? (
-                /* ── Quick Estimate panel ── */
-                <div className="bg-gold/5 border border-gold/30 rounded-xl p-4 space-y-3">
-                  <p className={`text-xs font-semibold text-gold ${hFont}`}>
-                    {cc.quickEstimateLabel} — {isMr ? "सरासरी" : "Avg."} ₹{avgRate.toLocaleString("en-IN")}/sqm {isMr ? "साठी" : "for"} {isMr ? district?.mr : district?.en}
-                  </p>
+              {valMode === "direct" ? (
+                /* Direct market value entry */
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={rawValue}
+                    onChange={(e) => setRawValue(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder={cc.propValuePlaceholder}
+                    className={`w-full pl-8 pr-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
+                  />
+                </div>
+              ) : (
+                /* Area × Rate panel */
+                <div className="bg-gold/5 border border-gold/30 rounded-xl p-4 space-y-4">
+
+                  {/* Unit selector */}
+                  <div>
+                    <p className={`text-xs font-semibold text-oxblood mb-2 ${hFont}`}>{cc.unitLabel}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {(["sqmt", "sqft", "guntha", "acre"] as const).map((u) => (
+                        <button
+                          key={u}
+                          onClick={() => handleUnitChange(u)}
+                          className={`py-2 rounded-lg border text-xs font-semibold transition-all ${
+                            unit === u
+                              ? "bg-oxblood text-gold border-oxblood"
+                              : "bg-white text-ink/65 border-gold/25 hover:border-gold/55"
+                          } ${isMr ? "font-devanagari" : ""}`}
+                        >
+                          {cc.units[u]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Area + Rate inputs */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={`text-xs text-ink/55 mb-1 block ${hFont}`}>{cc.areaLabel}</label>
@@ -253,9 +345,17 @@ export default function Calculator() {
                         placeholder={cc.areaPlaceholder}
                         className={`w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
                       />
+                      {/* Sq-meter equivalent */}
+                      {sqmEquiv !== null && (
+                        <p className="text-xs text-ink/35 mt-1">
+                          ≈ {sqmEquiv.toLocaleString("en-IN", { maximumFractionDigits: 2 })} {isMr ? "चौ. मीटर" : "Sq. Mt"}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className={`text-xs text-ink/55 mb-1 block ${hFont}`}>{cc.rateLabel}</label>
+                      <label className={`text-xs text-ink/55 mb-1 block ${isMr ? "font-devanagari" : ""}`}>
+                        {ratePerLabel}
+                      </label>
                       <div className="relative">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-xs select-none">₹</span>
                         <input
@@ -266,27 +366,23 @@ export default function Calculator() {
                           className={`w-full pl-6 pr-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink text-sm ${hFont}`}
                         />
                       </div>
+                      {district && AVG_RATES_SQM[district.en] && (
+                        <p className={`text-xs text-gold mt-1 ${hFont}`}>
+                          {isMr ? "अंदाज दर" : "Avg. rate"}: {isMr ? district.mr : district.en}
+                        </p>
+                      )}
                     </div>
                   </div>
+
+                  {/* Computed market value */}
                   {propValue && (
                     <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gold/20">
-                      <span className={`text-xs text-ink/50 ${hFont}`}>{isMr ? "गणना केलेले मूल्य" : "Computed value"}</span>
+                      <span className={`text-xs text-ink/50 ${hFont}`}>
+                        {isMr ? "गणना केलेले बाजार मूल्य" : "Computed market value"}
+                      </span>
                       <span className="font-bold text-oxblood text-sm">{inr(propValue)}</span>
                     </div>
                   )}
-                </div>
-              ) : (
-                /* ── Manual entry ── */
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={rawValue}
-                    onChange={(e) => setRawValue(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder={cc.propValuePlaceholder}
-                    className={`w-full pl-8 pr-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
-                  />
                 </div>
               )}
             </div>
@@ -314,13 +410,15 @@ export default function Calculator() {
                       <li
                         key={d.en}
                         onMouseDown={() => { setDistrict(d); setDistQuery(""); setDistOpen(false); }}
-                        className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-oxblood/5 hover:text-oxblood transition-colors ${isMr ? "font-devanagari" : "font-sans"}`}
+                        className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-oxblood/5 hover:text-oxblood transition-colors flex items-center justify-between ${isMr ? "font-devanagari" : "font-sans"}`}
                       >
-                        {isMr ? d.mr : d.en}
-                        {!isMr && <span className="ml-2 text-xs text-ink/35 font-devanagari">{d.mr}</span>}
-                        {AVG_RATES[d.en] && (
-                          <span className="ml-auto float-right text-xs text-gold font-semibold">
-                            ₹{(AVG_RATES[d.en]! / 1000).toFixed(0)}k/sqm
+                        <span>
+                          {isMr ? d.mr : d.en}
+                          {!isMr && <span className="ml-2 text-xs text-ink/35 font-devanagari">{d.mr}</span>}
+                        </span>
+                        {AVG_RATES_SQM[d.en] && (
+                          <span className="text-xs text-gold font-semibold ml-2 flex-shrink-0">
+                            ₹{((AVG_RATES_SQM[d.en]! * TO_SQM[unit]) / 1000).toFixed(0)}k/{isMr ? cc.units[unit] : cc.units[unit]}
                           </span>
                         )}
                       </li>
@@ -407,6 +505,12 @@ export default function Calculator() {
                     {/* Summary */}
                     <div className="space-y-1 pb-3 border-b border-gold/15">
                       <Row label={cc.propValueLabel} value={inr(result.propValue)} bold />
+                      {valMode === "area" && areaStr && (
+                        <Row
+                          label={isMr ? "क्षेत्र" : "Area"}
+                          value={`${areaStr} ${unitName}`}
+                        />
+                      )}
                       {district && <Row label={isMr ? "जिल्हा" : "District"} value={isMr ? district.mr : district.en} />}
                       <Row label={cc.areaType} value={cc.areaTypes[areaType]} />
                       {surveyNo && <Row label={cc.surveyNo} value={surveyNo} />}
@@ -441,7 +545,7 @@ export default function Calculator() {
               </div>
             </div>
 
-            {/* Verify on IGR portal */}
+            {/* Verify IGR link */}
             <a
               href="https://igrmaharashtra.gov.in/eASR/eASRCommon.aspx"
               target="_blank"

@@ -60,6 +60,10 @@ export const CONTENT = {
       disclaimer2: "By using this tool, you agree to our terms of data processing.",
       rateNote2026:
         "Rates updated for FY 2026-27 (Unchanged as per Govt. Notification dated Mar 31, 2026).",
+      enterValue: "Enter Market Value",
+      fromArea: "Area × Rate",
+      unitLabel: "Unit",
+      units: { sqmt: "Sq. Meter", sqft: "Sq. Foot", guntha: "Guntha", acre: "Acre" },
     },
   },
   mr: {
@@ -120,6 +124,10 @@ export const CONTENT = {
         "हे साधन वापरून, तुम्ही आमच्या डेटा प्रक्रिया अटींशी सहमत आहात.",
       rateNote2026:
         "FY 2026-27 साठी दर अद्ययावत (दि. ३१ मार्च २०२६ च्या शासन अधिसूचनेनुसार अपरिवर्तित).",
+      enterValue: "बाजार मूल्य प्रविष्ट करा",
+      fromArea: "क्षेत्र × दर",
+      unitLabel: "एकक",
+      units: { sqmt: "चौ. मीटर", sqft: "चौ. फूट", guntha: "गुंठा", acre: "एकर" },
     },
   },
 } as const;
