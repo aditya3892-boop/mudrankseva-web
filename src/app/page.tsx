@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CONTENT, FEATURES, type Lang } from "@/lib/content";
 
 /* ── Icons (gold-coloured via text-gold on parent) ─────────────────── */
@@ -182,6 +183,14 @@ export default function Home() {
         <p className={`max-w-lg text-ink/55 text-sm sm:text-base leading-relaxed ${hFont}`}>
           {c.heroDesc}
         </p>
+
+        {/* Primary CTA */}
+        <Link
+          href="/calculator"
+          className={`mt-8 inline-flex items-center gap-2 bg-oxblood text-gold border border-gold/50 px-7 py-3 rounded-full text-sm font-semibold hover:bg-oxblood-dark transition-colors shadow-sm ${hFont}`}
+        >
+          {c.tryCalculator}
+        </Link>
       </section>
 
       {/* ── Services grid ── */}
