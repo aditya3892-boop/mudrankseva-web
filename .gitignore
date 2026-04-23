@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Claude Code project settings
 .claude/
+
+# Lead capture data (local dev only)
+leads.json

@@ -49,6 +49,17 @@ export const CONTENT = {
       rateNote: "Rates per Maharashtra 2026 schedule.",
       disclaimer:
         "Estimate only. Consult a registered sub-registrar or professional before transacting.",
+      areaLabel: "Built-up Area",
+      areaPlaceholder: "e.g. 1200",
+      rateLabel: "Rate per sqm (₹)",
+      switchToManual: "Enter value manually",
+      quickEstimateLabel: "Quick Estimate",
+      calculateBtn: "Calculate",
+      leadSaved: "Saved",
+      verifyBtn: "Verify on Official IGR Portal →",
+      disclaimer2: "By using this tool, you agree to our terms of data processing.",
+      rateNote2026:
+        "Rates updated for FY 2026-27 (Unchanged as per Govt. Notification dated Mar 31, 2026).",
     },
   },
   mr: {
@@ -97,6 +108,18 @@ export const CONTENT = {
       rateNote: "महाराष्ट्र २०२६ अनुसूचीनुसार दर.",
       disclaimer:
         "हे केवळ अंदाज आहे. व्यवहारापूर्वी नोंदणीकृत दुय्यम निबंधक किंवा व्यावसायिकाचा सल्ला घ्या.",
+      areaLabel: "बांधकाम क्षेत्र",
+      areaPlaceholder: "उदा. १२००",
+      rateLabel: "दर प्रति चौ.मी. (₹)",
+      switchToManual: "मूल्य स्वतः प्रविष्ट करा",
+      quickEstimateLabel: "त्वरित अंदाज",
+      calculateBtn: "गणना करा",
+      leadSaved: "जतन केले",
+      verifyBtn: "अधिकृत IGR पोर्टलवर सत्यापित करा →",
+      disclaimer2:
+        "हे साधन वापरून, तुम्ही आमच्या डेटा प्रक्रिया अटींशी सहमत आहात.",
+      rateNote2026:
+        "FY 2026-27 साठी दर अद्ययावत (दि. ३१ मार्च २०२६ च्या शासन अधिसूचनेनुसार अपरिवर्तित).",
     },
   },
 } as const;
