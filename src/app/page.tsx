@@ -212,38 +212,46 @@ export default function Home() {
 
           {/* 15-card grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-            {FEATURES.map((f, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl p-4 flex flex-col gap-2.5 border border-gold/15 hover:border-gold/50 hover:shadow-md transition-all duration-200 group"
-              >
-                {/* Icon — gold */}
-                <div className="text-gold mb-0.5">{ICONS[i]}</div>
+            {FEATURES.map((f, i) => {
+              const isLive = i === 0; // Stamp Duty Calculator is live
+              const inner = (
+                <div className={`bg-white rounded-xl p-4 flex flex-col gap-2.5 border transition-all duration-200 group h-full ${
+                  isLive
+                    ? "border-gold/40 hover:border-gold hover:shadow-lg cursor-pointer"
+                    : "border-gold/15 hover:border-gold/50 hover:shadow-md"
+                }`}>
+                  <div className="text-gold mb-0.5">{ICONS[i]}</div>
 
-                {/* Title — oxblood, switches with lang */}
-                <h3 className={`font-bold text-oxblood text-sm leading-snug ${isMr ? "font-devanagari" : "font-sans"}`}>
-                  {isMr ? f.titleMr : f.titleEn}
-                </h3>
+                  <h3 className={`font-bold text-oxblood text-sm leading-snug ${isMr ? "font-devanagari" : "font-sans"}`}>
+                    {isMr ? f.titleMr : f.titleEn}
+                  </h3>
 
-                {/* English description — always visible */}
-                <p className="text-xs text-ink/55 leading-relaxed font-sans">
-                  {f.descEn}
-                </p>
+                  <p className="text-xs text-ink/55 leading-relaxed font-sans flex-1">
+                    {f.descEn}
+                  </p>
 
-                {/* Thin gold rule */}
-                <div className="h-px bg-gold/20 my-0.5" />
+                  <div className="h-px bg-gold/20 my-0.5" />
 
-                {/* Marathi description — always visible */}
-                <p className="text-xs text-oxblood/50 font-devanagari leading-relaxed flex-1">
-                  {f.descMr}
-                </p>
+                  <p className="text-xs text-oxblood/50 font-devanagari leading-relaxed">
+                    {f.descMr}
+                  </p>
 
-                {/* Coming soon pill */}
-                <span className={`self-start mt-1 text-xs font-semibold text-gold border border-gold/40 px-2.5 py-0.5 rounded-full ${hFont}`}>
-                  {c.comingSoon}
-                </span>
-              </div>
-            ))}
+                  {isLive ? (
+                    <span className={`self-start mt-1 text-xs font-semibold text-oxblood-dark bg-gold px-2.5 py-0.5 rounded-full ${hFont}`}>
+                      {isMr ? "उघडा →" : "Open →"}
+                    </span>
+                  ) : (
+                    <span className={`self-start mt-1 text-xs font-semibold text-gold border border-gold/40 px-2.5 py-0.5 rounded-full ${hFont}`}>
+                      {c.comingSoon}
+                    </span>
+                  )}
+                </div>
+              );
+
+              return isLive
+                ? <Link key={i} href="/calculator" className="flex">{inner}</Link>
+                : <div key={i}>{inner}</div>;
+            })}
           </div>
         </div>
       </section>
