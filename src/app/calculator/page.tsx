@@ -11,6 +11,8 @@ type Gender   = "male" | "female";
 type ValMode  = "direct" | "area";
 type Unit     = "sqmt" | "sqft" | "guntha" | "acre";
 
+type ReportStep = "locked" | "form" | "ready";
+
 interface CalcResult {
   propValue: number;
   isFemale: boolean;
@@ -132,8 +134,11 @@ export default function Calculator() {
   const [gender, setGender]       = useState<Gender>("male");
   const [surveyNo, setSurveyNo]   = useState("");
 
-  /* ── Result gate ── */
-  const [unlocked, setUnlocked]   = useState(false);
+  /* ── Report gate ── */
+  const [reportStep, setReportStep] = useState<ReportStep>("locked");
+  const [reportName, setReportName] = useState("");
+  const [reportPhone, setReportPhone] = useState("");
+  const [reportSaving, setReportSaving] = useState(false);
 
   /* ── Lead ── */
   const [saving, setSaving]       = useState(false);
@@ -190,7 +195,7 @@ export default function Calculator() {
   }, [valMode, areaStr, rateStr, rawValue]);
 
   /* ── Reset gate when inputs change ── */
-  useEffect(() => { setUnlocked(false); }, [propValue, areaType, gender]);
+  useEffect(() => { setReportStep("locked"); setReportName(""); setReportPhone(""); }, [propValue, areaType, gender]);
 
   /* ── Live calculation ── */
   const result = useMemo<CalcResult | null>(
@@ -233,9 +238,45 @@ export default function Calculator() {
     }
   }, [result, saving, district, areaType, surveyNo, gender, unit, valMode]);
 
+  /* ── Report lead capture + unlock ── */
+  const handleGetReport = useCallback(async () => {
+    if (!result || reportSaving) return;
+    setReportSaving(true);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: reportName,
+          phone: reportPhone,
+          district: district?.en ?? null,
+          areaType, surveyNo: surveyNo || null,
+          propValue: result.propValue, gender,
+          unit: valMode === "area" ? unit : null,
+          source: "detailed-report",
+        }),
+      });
+    } catch (err) {
+      console.error("[Report lead]", err);
+    } finally {
+      setReportSaving(false);
+      setReportStep("ready");
+    }
+  }, [result, reportSaving, reportName, reportPhone, district, areaType, surveyNo, gender, unit, valMode]);
+
   /* ─────────────────── RENDER ── */
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-ink">
+    <>
+      <style>{`
+        #calc-report { display: none; }
+        @media print {
+          body { background: white !important; }
+          #calc-screen { display: none !important; }
+          #calc-report { display: block !important; }
+          @page { margin: 1.5cm; size: A4; }
+        }
+      `}</style>
+    <div id="calc-screen" className="min-h-screen flex flex-col bg-cream text-ink">
 
       {/* Header */}
       <header className="bg-oxblood px-5 py-3 flex items-center justify-between gap-4">
@@ -479,15 +520,56 @@ export default function Calculator() {
                       <Row label={cc.grandTotal} value={inr(result.grandTotal)} highlight font={hFont} />
                     </div>
 
-                    {/* ── Unlock button / detailed breakdown ── */}
-                    {!unlocked ? (
+                    {/* ── Detailed breakdown gate ── */}
+                    {reportStep === "locked" && (
                       <button
-                        onClick={() => setUnlocked(true)}
+                        onClick={() => setReportStep("form")}
                         className={`w-full mt-1 py-2.5 border border-gold/40 rounded-xl text-sm font-semibold text-gold hover:bg-gold/8 transition-colors ${hFont}`}
                       >
-                        {cc.unlockBtn}
+                        {isMr ? "तपशीलवार अहवाल मिळवा →" : "Get Detailed Breakdown →"}
                       </button>
-                    ) : (
+                    )}
+
+                    {reportStep === "form" && (
+                      <div className="mt-2 bg-gold/5 rounded-xl border border-gold/25 p-4 space-y-3">
+                        <p className={`text-xs font-semibold text-oxblood ${hFont}`}>
+                          {isMr ? "मोफत अहवाल मिळवा" : "Get Your Free Report"}
+                        </p>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={reportName}
+                            onChange={e => setReportName(e.target.value)}
+                            placeholder={isMr ? "पूर्ण नाव" : "Full Name"}
+                            className={`w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
+                          />
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
+                            value={reportPhone}
+                            onChange={e => setReportPhone(e.target.value.replace(/\D/g, ""))}
+                            placeholder={isMr ? "WhatsApp नंबर (10 अंक)" : "WhatsApp Number (10 digits)"}
+                            className="w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm font-sans"
+                          />
+                        </div>
+                        <button
+                          onClick={handleGetReport}
+                          disabled={!reportName.trim() || reportPhone.length !== 10 || reportSaving}
+                          className={`w-full py-2.5 rounded-lg bg-oxblood text-gold border border-gold/40 text-sm font-bold transition-all hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed ${hFont}`}
+                        >
+                          {reportSaving ? "…" : isMr ? "माझा मोफत अहवाल पाठवा" : "Send My Free Report"}
+                        </button>
+                        <button
+                          onClick={() => setReportStep("locked")}
+                          className="w-full text-xs text-ink/35 hover:text-ink/55 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {reportStep === "ready" && (
                       <div className="mt-1">
                         <div className="h-px bg-gold/15 mb-3" />
 
@@ -510,6 +592,39 @@ export default function Calculator() {
                           <p className={`text-xs font-medium text-oxblood/60 ${hFont}`}>{cc.rateNote2026}</p>
                           <p className={`text-xs text-ink/40 ${hFont}`}>* {cc.rateNote}</p>
                           <p className={`text-xs text-ink/35 ${hFont}`}>{cc.disclaimer}</p>
+                        </div>
+
+                        {/* Download + WhatsApp */}
+                        <div className="mt-4 space-y-2">
+                          <button
+                            onClick={() => window.print()}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-oxblood text-gold border border-gold/40 text-sm font-semibold hover:bg-oxblood-dark transition-colors ${hFont}`}
+                          >
+                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            {isMr ? "अहवाल डाउनलोड करा" : "Download Your Report"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const msg = encodeURIComponent(
+                                `माझ्या मालमत्तेचे Stamp Duty:\n` +
+                                `Property Value: ${inr(result.propValue)}\n` +
+                                `Stamp Duty: ${inr(result.totalDutyAmt)} (${pct(result.totalDutyRate)})\n` +
+                                `Registration: ${inr(result.regFeeAmt)}\n` +
+                                `Total Payable: ${inr(result.grandTotal)}\n\n` +
+                                `Calculate yours at mudrankseva.in`
+                              );
+                              window.open(`https://wa.me/?text=${msg}`, "_blank");
+                            }}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe5a] transition-colors ${hFont}`}
+                          >
+                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                            </svg>
+                            {isMr ? "WhatsApp वर शेअर करा" : "Share on WhatsApp"}
+                          </button>
                         </div>
                       </div>
                     )}
@@ -535,5 +650,147 @@ export default function Calculator() {
         <p className={`text-gold/80 text-sm ${hFont}`}>© {new Date().getFullYear()} {c.footerBrand}. {c.footerRights}</p>
       </footer>
     </div>
+
+    {/* ── Print-only report (hidden on screen) ── */}
+    <div id="calc-report">
+      {result && (
+        <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a0505", fontSize: "12pt", lineHeight: "1.6" }}>
+
+          {/* Header */}
+          <div style={{ textAlign: "center", borderBottom: "2px solid #701c1c", paddingBottom: "14px", marginBottom: "20px" }}>
+            <div style={{ fontSize: "22pt", fontWeight: "bold", color: "#701c1c", letterSpacing: "0.05em" }}>MUDRANKSEVA</div>
+            <div style={{ fontSize: "9pt", color: "#888", marginBottom: "8px" }}>mudrankseva.in · Maharashtra Property Services</div>
+            <div style={{ fontSize: "15pt", fontWeight: "bold" }}>Stamp Duty Calculation Report</div>
+            <div style={{ fontSize: "9pt", color: "#666", marginTop: "2px" }}>Maharashtra Ready Reckoner 2026-27</div>
+          </div>
+
+          {reportName && (
+            <div style={{ fontSize: "9pt", color: "#666", marginBottom: "16px" }}>
+              Prepared for: <strong>{reportName}</strong>{reportPhone ? ` · +91 ${reportPhone}` : ""}
+            </div>
+          )}
+
+          {/* Property Details */}
+          <div style={{ marginBottom: "18px" }}>
+            <div style={{ fontSize: "9pt", fontWeight: "bold", color: "#701c1c", textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1px solid #d4af37", paddingBottom: "3px", marginBottom: "8px" }}>
+              Property Details
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11pt" }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#555", width: "55%" }}>Property Value</td>
+                  <td style={{ textAlign: "right", fontWeight: "bold" }}>{inr(result.propValue)}</td>
+                </tr>
+                {valMode === "area" && areaStr && (
+                  <tr>
+                    <td style={{ padding: "3px 0", color: "#555" }}>Area</td>
+                    <td style={{ textAlign: "right" }}>{areaStr} {unitName}</td>
+                  </tr>
+                )}
+                {district && (
+                  <tr>
+                    <td style={{ padding: "3px 0", color: "#555" }}>District</td>
+                    <td style={{ textAlign: "right" }}>{district.en}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#555" }}>Area Type</td>
+                  <td style={{ textAlign: "right" }}>
+                    {areaType === "corporation" ? "Municipal Corporation" : areaType === "council" ? "Municipal Council / Cantonment" : "Gram Panchayat / Rural"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#555" }}>Buyer Type</td>
+                  <td style={{ textAlign: "right" }}>{result.isFemale ? "Female" : "Male"}</td>
+                </tr>
+                {surveyNo && (
+                  <tr>
+                    <td style={{ padding: "3px 0", color: "#555" }}>Survey / Gat No.</td>
+                    <td style={{ textAlign: "right" }}>{surveyNo}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Stamp Duty Breakdown */}
+          <div style={{ marginBottom: "18px" }}>
+            <div style={{ fontSize: "9pt", fontWeight: "bold", color: "#701c1c", textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1px solid #d4af37", paddingBottom: "3px", marginBottom: "8px" }}>
+              Stamp Duty Breakdown
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11pt" }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#555" }}>Base Stamp Duty ({pct(result.baseRate)})</td>
+                  <td style={{ textAlign: "right" }}>{inr(result.baseAmt)}</td>
+                </tr>
+                {result.metroCessAmt !== null && (
+                  <tr>
+                    <td style={{ padding: "3px 0", color: "#555" }}>Metro Cess (1%)</td>
+                    <td style={{ textAlign: "right" }}>{inr(result.metroCessAmt)}</td>
+                  </tr>
+                )}
+                {result.lbtAmt !== null && (
+                  <tr>
+                    <td style={{ padding: "3px 0", color: "#555" }}>Local Body Tax / LBT (1%)</td>
+                    <td style={{ textAlign: "right" }}>{inr(result.lbtAmt)}</td>
+                  </tr>
+                )}
+                <tr style={{ borderTop: "1px solid #ddd" }}>
+                  <td style={{ padding: "6px 0 3px", fontWeight: "bold" }}>Total Stamp Duty ({pct(result.totalDutyRate)})</td>
+                  <td style={{ textAlign: "right", fontWeight: "bold", padding: "6px 0 3px" }}>{inr(result.totalDutyAmt)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Registration Charges */}
+          <div style={{ marginBottom: "18px" }}>
+            <div style={{ fontSize: "9pt", fontWeight: "bold", color: "#701c1c", textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1px solid #d4af37", paddingBottom: "3px", marginBottom: "8px" }}>
+              Registration Charges
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11pt" }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "3px 0", color: "#555" }}>
+                    Registration Fee (1%{result.regFeeCapped ? ", capped at ₹30,000" : ""})
+                  </td>
+                  <td style={{ textAlign: "right" }}>{inr(result.regFeeAmt)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Grand Total */}
+          <div style={{ backgroundColor: "#701c1c", color: "#d4af37", padding: "12px 16px", borderRadius: "6px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <span style={{ fontWeight: "bold", fontSize: "12pt", letterSpacing: "0.03em" }}>TOTAL AMOUNT PAYABLE</span>
+            <span style={{ fontWeight: "900", fontSize: "18pt" }}>{inr(result.grandTotal)}</span>
+          </div>
+
+          {/* Notes */}
+          <div style={{ fontSize: "8pt", color: "#888", borderTop: "1px solid #eee", paddingTop: "10px", marginBottom: "14px", lineHeight: "1.5" }}>
+            <p style={{ margin: "0 0 3px 0" }}>* Rates as per Maharashtra Ready Reckoner 2026-27. Actual rates may vary — verify with the Sub-Registrar&apos;s office before payment.</p>
+            <p style={{ margin: "0 0 3px 0" }}>* Female buyers may be eligible for reduced stamp duty in certain municipalities.</p>
+            <p style={{ margin: "0" }}>* Registration fee is 1% of property value, capped at ₹30,000.</p>
+          </div>
+
+          {/* Upsell */}
+          <div style={{ border: "1px solid #d4af37", borderRadius: "5px", padding: "10px 14px", marginBottom: "14px", backgroundColor: "#fdf8f0" }}>
+            <div style={{ fontWeight: "bold", color: "#701c1c", fontSize: "10pt", marginBottom: "2px" }}>Need a Rent Agreement?</div>
+            <div style={{ fontSize: "9pt", color: "#555" }}>
+              Generate your Maharashtra Leave &amp; License Agreement at{" "}
+              <strong>mudrankseva.in/rent-agreement</strong> for just ₹299. Ready in 5 minutes.
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ textAlign: "center", fontSize: "8pt", color: "#aaa", borderTop: "1px solid #eee", paddingTop: "10px" }}>
+            Generated by <strong>Mudrankseva</strong> · mudrankseva.in · Maharashtra Property Services
+          </div>
+
+        </div>
+      )}
+    </div>
+    </>
   );
 }
