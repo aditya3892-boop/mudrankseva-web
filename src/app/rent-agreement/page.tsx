@@ -1,0 +1,730 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { type Lang } from "@/lib/content";
+
+/* ── Razorpay global types ──────────────────────────────────────────── */
+declare global {
+  interface Window {
+    Razorpay: new (opts: RazorpayOptions) => { open(): void };
+  }
+}
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler(r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }): void;
+  prefill?: { name?: string };
+  theme?: { color?: string };
+  modal?: { ondismiss?(): void };
+}
+
+/* ── Types ──────────────────────────────────────────────────────────── */
+type Step = "form" | "generating" | "done";
+type Payer = "Landlord" | "Tenant" | "Split equally";
+
+interface FormFields {
+  landlordName: string;
+  landlordAddress: string;
+  landlordAadhaar: string;
+  tenantName: string;
+  tenantAddress: string;
+  tenantAadhaar: string;
+  propertyAddress: string;
+  propertyType: string;
+  furnishedStatus: string;
+  monthlyRent: string;
+  securityDeposit: string;
+  startDate: string;
+  duration: string;
+  lockInPeriod: string;
+  maintenancePaidBy: Payer;
+  electricityPaidBy: Payer;
+  waterPaidBy: Payer;
+}
+
+const INITIAL: FormFields = {
+  landlordName: "",
+  landlordAddress: "",
+  landlordAadhaar: "",
+  tenantName: "",
+  tenantAddress: "",
+  tenantAadhaar: "",
+  propertyAddress: "",
+  propertyType: "2BHK",
+  furnishedStatus: "Semi-Furnished",
+  monthlyRent: "",
+  securityDeposit: "",
+  startDate: "",
+  duration: "11",
+  lockInPeriod: "0",
+  maintenancePaidBy: "Tenant",
+  electricityPaidBy: "Tenant",
+  waterPaidBy: "Tenant",
+};
+
+const PAYERS: Payer[] = ["Landlord", "Tenant", "Split equally"];
+const PAYER_MR: Record<Payer, string> = {
+  Landlord: "मालक",
+  Tenant: "भाडेकरू",
+  "Split equally": "समान वाटप",
+};
+
+/* ── Helpers ────────────────────────────────────────────────────────── */
+function Field({
+  label, mr, children, optional,
+}: {
+  label: string; mr: string; children: React.ReactNode; optional?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block mb-1.5">
+        <span className="text-sm font-semibold text-oxblood font-sans">{label}</span>
+        {optional && <span className="ml-1.5 text-xs text-ink/40 font-sans">(optional)</span>}
+        <span className="block text-xs text-ink/45 font-devanagari mt-0.5">{mr}</span>
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function SectionCard({
+  title, mr, children,
+}: {
+  title: string; mr: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gold/25 overflow-hidden shadow-sm">
+      <div className="bg-oxblood/[0.05] px-5 py-3 border-b border-gold/20 flex items-center gap-3">
+        <div className="w-1 h-4 bg-gold rounded-full" />
+        <div>
+          <span className="font-bold text-oxblood text-sm font-sans">{title}</span>
+          <span className="ml-2 text-xs text-oxblood/50 font-devanagari">{mr}</span>
+        </div>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function InputStyle(extra = "") {
+  return `w-full px-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink placeholder:text-ink/30 text-sm font-sans ${extra}`;
+}
+
+function SelectStyle() {
+  return "w-full appearance-none px-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink text-sm font-sans pr-9 cursor-pointer";
+}
+
+function ChevronDown() {
+  return (
+    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/35">
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </span>
+  );
+}
+
+function PayerToggle({
+  value, onChange,
+}: {
+  value: Payer; onChange(v: Payer): void;
+}) {
+  return (
+    <div className="flex rounded-xl border border-gold/30 overflow-hidden text-xs font-semibold">
+      {PAYERS.map((p, i) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onChange(p)}
+          className={`flex-1 py-2.5 transition-colors flex flex-col items-center gap-0.5 ${i > 0 ? "border-l border-gold/25" : ""} ${value === p ? "bg-oxblood text-gold" : "bg-white text-ink/55 hover:text-ink"}`}
+        >
+          <span className="font-sans">{p}</span>
+          <span className="font-devanagari text-[10px] opacity-70">{PAYER_MR[p]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── Page ───────────────────────────────────────────────────────────── */
+export default function RentAgreement() {
+  const [lang, setLang] = useState<Lang>("en");
+  const isMr = lang === "mr";
+
+  const [step, setStep] = useState<Step>("form");
+  const [form, setForm] = useState<FormFields>(INITIAL);
+  const [agreement, setAgreement] = useState("");
+  const [disclaimer, setDisclaimer] = useState("");
+  const [error, setError] = useState("");
+  const [paying, setPaying] = useState(false);
+
+  /* Load Razorpay checkout script once */
+  useEffect(() => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.async = true;
+    document.body.appendChild(s);
+    return () => { document.body.removeChild(s); };
+  }, []);
+
+  /* Set today as default start date */
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setForm(prev => ({ ...prev, startDate: today }));
+  }, []);
+
+  const set = useCallback(<K extends keyof FormFields>(k: K, v: FormFields[K]) => {
+    setForm(prev => ({ ...prev, [k]: v }));
+  }, []);
+
+  const isValid = useCallback(() =>
+    Boolean(
+      form.landlordName.trim() &&
+      form.landlordAddress.trim() &&
+      form.tenantName.trim() &&
+      form.tenantAddress.trim() &&
+      form.propertyAddress.trim() &&
+      form.monthlyRent &&
+      form.securityDeposit &&
+      form.startDate
+    ), [form]);
+
+  const handlePayAndGenerate = useCallback(async () => {
+    if (!isValid() || paying) return;
+    setError("");
+    setPaying(true);
+
+    try {
+      const orderRes = await fetch("/api/create-order", { method: "POST" });
+      const orderJson = await orderRes.json() as { orderId?: string; amount?: number; currency?: string; keyId?: string; error?: string };
+      if (!orderRes.ok) throw new Error(orderJson.error ?? "Failed to create order");
+
+      const { orderId, amount, currency, keyId } = orderJson as Required<typeof orderJson>;
+
+      const rzp = new window.Razorpay({
+        key: keyId,
+        amount,
+        currency,
+        name: "Mudrankseva",
+        description: "Maharashtra Rent Agreement",
+        order_id: orderId,
+        handler: async (response) => {
+          setPaying(false);
+          setStep("generating");
+
+          try {
+            const genRes = await fetch("/api/generate-agreement", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                formData: form,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
+            const genJson = await genRes.json() as { agreement?: string; disclaimer?: string; error?: string };
+            if (!genRes.ok) throw new Error(genJson.error ?? "Generation failed");
+
+            setAgreement(genJson.agreement ?? "");
+            setDisclaimer(genJson.disclaimer ?? "");
+            setStep("done");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to generate agreement. Please contact support.");
+            setStep("form");
+          }
+        },
+        prefill: { name: form.landlordName },
+        theme: { color: "#701c1c" },
+        modal: { ondismiss: () => setPaying(false) },
+      });
+
+      rzp.open();
+    } catch (err) {
+      setPaying(false);
+      setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
+    }
+  }, [form, isValid, paying]);
+
+  const handleTestGenerate = useCallback(async () => {
+    if (!isValid()) return;
+    setError("");
+    setStep("generating");
+    try {
+      const genRes = await fetch("/api/generate-agreement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formData: form,
+          razorpayOrderId: "order_test",
+          razorpayPaymentId: "test_123",
+          razorpaySignature: "test_sig",
+        }),
+      });
+      const genJson = await genRes.json() as { agreement?: string; disclaimer?: string; error?: string };
+      if (!genRes.ok) throw new Error(genJson.error ?? "Generation failed");
+      setAgreement(genJson.agreement ?? "");
+      setDisclaimer(genJson.disclaimer ?? "");
+      setStep("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Generation failed");
+      setStep("form");
+    }
+  }, [form, isValid]);
+
+  const handleDownloadPDF = () => window.print();
+
+  const handleWhatsApp = () => {
+    const msg = encodeURIComponent(
+      `नमस्कार! माझा Maharashtra Rent Agreement Mudrankseva द्वारे तयार झाला आहे.\n\n` +
+      `Landlord: ${form.landlordName}\nTenant: ${form.tenantName}\nProperty: ${form.propertyAddress}\n\n` +
+      `Hello! My Maharashtra Rent Agreement has been generated via Mudrankseva. Visit mudrankseva.com to generate yours for just ₹299.`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  };
+
+  const year = new Date().getFullYear();
+
+  /* ── Render ── */
+  return (
+    <>
+      {/* Print-specific styles */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; }
+          #agreement-print-area {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+          #agreement-scroll {
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          @page { margin: 2cm; size: A4; }
+        }
+      `}</style>
+
+      <div className="min-h-screen flex flex-col bg-cream text-ink">
+
+        {/* ── Header ── */}
+        <header className="no-print bg-oxblood px-5 py-3 flex items-center justify-between gap-4">
+          <Link href="/" className="rounded-xl overflow-hidden border border-gold/30 bg-cream px-3 py-1.5 flex-shrink-0">
+            <Image src="/logo.jpg" alt="Mudrankseva" width={200} height={48} priority className="h-11 w-auto object-contain" />
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center rounded-full border border-gold/50 overflow-hidden text-xs font-semibold">
+              <button
+                onClick={() => setLang("en")}
+                className={`px-3.5 py-1.5 transition-colors ${lang === "en" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
+              >
+                EN
+              </button>
+              <span className="w-px h-4 bg-gold/30" />
+              <button
+                onClick={() => setLang("mr")}
+                className={`px-3.5 py-1.5 font-devanagari transition-colors ${lang === "mr" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
+              >
+                मराठी
+              </button>
+            </div>
+            <span className={`hidden sm:inline text-xs text-gold/80 border border-gold/40 rounded-full px-3 py-1 tracking-widest uppercase ${isMr ? "font-devanagari tracking-normal" : ""}`}>
+              {isMr ? "महाराष्ट्र" : "Maharashtra"}
+            </span>
+          </div>
+        </header>
+
+        {/* ── Page title ── */}
+        <div className="no-print bg-oxblood/[0.04] border-b border-gold/15 px-6 py-5">
+          <div className="max-w-3xl mx-auto">
+            <Link href="/" className="text-xs text-oxblood/60 hover:text-oxblood transition-colors mb-2 inline-block font-sans">
+              {isMr ? "← मुख्यपृष्ठ" : "← Back to home"}
+            </Link>
+            <h1 className={`text-2xl sm:text-3xl font-bold text-oxblood ${isMr ? "font-devanagari" : "font-sans"}`}>
+              {isMr ? "भाडेकरार जनरेटर" : "Rent Agreement Generator"}
+            </h1>
+            <p className="text-ink/50 text-sm mt-1 font-sans">
+              {isMr ? "महाराष्ट्र Leave and License Agreement — ₹२९९" : "Maharashtra Leave & License Agreement — ₹299"}
+            </p>
+          </div>
+        </div>
+
+        {/* ── Main ── */}
+        <main className="flex-1 px-4 sm:px-6 py-8">
+          <div className="max-w-3xl mx-auto">
+
+            {/* ── FORM STEP ── */}
+            {step === "form" && (
+              <div className="space-y-5">
+
+                {/* Landlord */}
+                <SectionCard title="Landlord Details" mr="मालकाची माहिती">
+                  <Field label="Full Name" mr="पूर्ण नाव">
+                    <input
+                      type="text"
+                      value={form.landlordName}
+                      onChange={e => set("landlordName", e.target.value)}
+                      placeholder="e.g. Ramesh Shankar Patil"
+                      className={InputStyle()}
+                    />
+                  </Field>
+                  <Field label="Address" mr="पत्ता">
+                    <textarea
+                      value={form.landlordAddress}
+                      onChange={e => set("landlordAddress", e.target.value)}
+                      placeholder="Full residential address"
+                      rows={2}
+                      className={InputStyle("resize-none")}
+                    />
+                  </Field>
+                  <Field label="Aadhaar Number" mr="आधार क्रमांक" optional>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={12}
+                      value={form.landlordAadhaar}
+                      onChange={e => set("landlordAadhaar", e.target.value.replace(/\D/g, ""))}
+                      placeholder="12-digit Aadhaar"
+                      className={InputStyle()}
+                    />
+                  </Field>
+                </SectionCard>
+
+                {/* Tenant */}
+                <SectionCard title="Tenant Details" mr="भाडेकरूची माहिती">
+                  <Field label="Full Name" mr="पूर्ण नाव">
+                    <input
+                      type="text"
+                      value={form.tenantName}
+                      onChange={e => set("tenantName", e.target.value)}
+                      placeholder="e.g. Suresh Kumar Sharma"
+                      className={InputStyle()}
+                    />
+                  </Field>
+                  <Field label="Permanent Address" mr="कायमचा पत्ता">
+                    <textarea
+                      value={form.tenantAddress}
+                      onChange={e => set("tenantAddress", e.target.value)}
+                      placeholder="Full permanent address"
+                      rows={2}
+                      className={InputStyle("resize-none")}
+                    />
+                  </Field>
+                  <Field label="Aadhaar Number" mr="आधार क्रमांक" optional>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={12}
+                      value={form.tenantAadhaar}
+                      onChange={e => set("tenantAadhaar", e.target.value.replace(/\D/g, ""))}
+                      placeholder="12-digit Aadhaar"
+                      className={InputStyle()}
+                    />
+                  </Field>
+                </SectionCard>
+
+                {/* Property */}
+                <SectionCard title="Property Details" mr="मालमत्तेची माहिती">
+                  <Field label="Property Address" mr="मालमत्तेचा पत्ता">
+                    <textarea
+                      value={form.propertyAddress}
+                      onChange={e => set("propertyAddress", e.target.value)}
+                      placeholder="Full address of the rented property"
+                      rows={2}
+                      className={InputStyle("resize-none")}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Property Type" mr="मालमत्तेचा प्रकार">
+                      <div className="relative">
+                        <select
+                          value={form.propertyType}
+                          onChange={e => set("propertyType", e.target.value)}
+                          className={SelectStyle()}
+                        >
+                          {["1BHK", "2BHK", "3BHK", "3BHK+", "Commercial"].map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                        <ChevronDown />
+                      </div>
+                    </Field>
+                    <Field label="Furnished Status" mr="फर्निशिंग">
+                      <div className="relative">
+                        <select
+                          value={form.furnishedStatus}
+                          onChange={e => set("furnishedStatus", e.target.value)}
+                          className={SelectStyle()}
+                        >
+                          {["Fully Furnished", "Semi-Furnished", "Unfurnished"].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                        <ChevronDown />
+                      </div>
+                    </Field>
+                  </div>
+                </SectionCard>
+
+                {/* Financial */}
+                <SectionCard title="Financial Terms" mr="आर्थिक अटी">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Monthly Rent (₹)" mr="मासिक भाडे">
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={form.monthlyRent}
+                          onChange={e => set("monthlyRent", e.target.value.replace(/\D/g, ""))}
+                          placeholder="15000"
+                          className={InputStyle("pl-8")}
+                        />
+                      </div>
+                    </Field>
+                    <Field label="Security Deposit (₹)" mr="सिक्युरिटी ठेव">
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={form.securityDeposit}
+                          onChange={e => set("securityDeposit", e.target.value.replace(/\D/g, ""))}
+                          placeholder="30000"
+                          className={InputStyle("pl-8")}
+                        />
+                      </div>
+                    </Field>
+                  </div>
+                </SectionCard>
+
+                {/* Agreement Terms */}
+                <SectionCard title="Agreement Terms" mr="करार अटी">
+                  <Field label="Agreement Start Date" mr="प्रारंभ तारीख">
+                    <input
+                      type="date"
+                      value={form.startDate}
+                      onChange={e => set("startDate", e.target.value)}
+                      className={InputStyle()}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Duration (months)" mr="कालावधी (महिने)">
+                      <div className="relative">
+                        <select
+                          value={form.duration}
+                          onChange={e => set("duration", e.target.value)}
+                          className={SelectStyle()}
+                        >
+                          {["6", "11", "12", "24", "36"].map(d => (
+                            <option key={d} value={d}>{d} months</option>
+                          ))}
+                        </select>
+                        <ChevronDown />
+                      </div>
+                    </Field>
+                    <Field label="Lock-in Period (months)" mr="लॉक-इन कालावधी">
+                      <div className="relative">
+                        <select
+                          value={form.lockInPeriod}
+                          onChange={e => set("lockInPeriod", e.target.value)}
+                          className={SelectStyle()}
+                        >
+                          {["0", "1", "2", "3", "6"].map(m => (
+                            <option key={m} value={m}>{m === "0" ? "No lock-in" : `${m} month${m === "1" ? "" : "s"}`}</option>
+                          ))}
+                        </select>
+                        <ChevronDown />
+                      </div>
+                    </Field>
+                  </div>
+                </SectionCard>
+
+                {/* Utilities */}
+                <SectionCard title="Utility Responsibilities" mr="देखभाल जबाबदारी">
+                  <Field label="Maintenance Charges" mr="देखरेखीचा खर्च">
+                    <PayerToggle value={form.maintenancePaidBy} onChange={v => set("maintenancePaidBy", v)} />
+                  </Field>
+                  <Field label="Electricity Bill" mr="वीज बिल">
+                    <PayerToggle value={form.electricityPaidBy} onChange={v => set("electricityPaidBy", v)} />
+                  </Field>
+                  <Field label="Water Bill" mr="पाण्याचे बिल">
+                    <PayerToggle value={form.waterPaidBy} onChange={v => set("waterPaidBy", v)} />
+                  </Field>
+                </SectionCard>
+
+                {/* Error */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-sans">
+                    {error}
+                  </div>
+                )}
+
+                {/* Price + CTA */}
+                <div className="bg-oxblood rounded-2xl p-6 border border-gold/40">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="text-gold font-bold text-lg font-sans">Ready to generate?</h3>
+                      <p className="text-gold/60 text-xs font-devanagari mt-0.5">AI द्वारे Maharashtra करार तयार होईल</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-gold font-black text-2xl font-sans">₹299</div>
+                      <div className="text-gold/50 text-xs font-sans">one-time</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {["5 min mein ready", "Maharashtra format", "Print-ready PDF"].map(tag => (
+                      <span key={tag} className="bg-gold/15 text-gold text-xs px-2.5 py-1 rounded-full font-sans">{tag}</span>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handlePayAndGenerate}
+                    disabled={!isValid() || paying}
+                    className="w-full py-4 rounded-xl bg-gold text-oxblood-dark font-black text-base transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
+                  >
+                    {paying ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-oxblood/30 border-t-oxblood rounded-full animate-spin" />
+                        Opening payment…
+                      </>
+                    ) : (
+                      "Pay ₹299 and Generate Agreement"
+                    )}
+                  </button>
+
+                  {!isValid() && (
+                    <p className="text-gold/50 text-xs text-center mt-2 font-sans">
+                      Fill all required fields to continue
+                    </p>
+                  )}
+
+                  {process.env.NODE_ENV === "development" && (
+                    <button
+                      onClick={handleTestGenerate}
+                      disabled={!isValid()}
+                      className="w-full mt-3 py-2.5 rounded-xl border border-dashed border-gold/40 text-gold/60 hover:text-gold hover:border-gold/70 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-sans"
+                    >
+                      [DEV] Test Generate — skip payment
+                    </button>
+                  )}
+                </div>
+
+                {/* Trust note */}
+                <p className="text-center text-xs text-ink/35 font-sans">
+                  Secure payment via Razorpay · Your data is not stored · 10,000+ agreements generated
+                </p>
+
+              </div>
+            )}
+
+            {/* ── GENERATING STEP ── */}
+            {step === "generating" && (
+              <div className="flex flex-col items-center justify-center py-24 gap-6">
+                <div className="w-16 h-16 rounded-full border-4 border-gold/20 border-t-gold animate-spin" />
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-oxblood font-sans mb-1">Generating your agreement…</h2>
+                  <p className="text-ink/50 text-sm font-devanagari">तुमचा करार तयार होत आहे, कृपया थांबा</p>
+                  <p className="text-ink/35 text-xs font-sans mt-3">This usually takes 20–40 seconds</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── DONE STEP ── */}
+            {step === "done" && (
+              <div>
+                {/* Actions bar (hidden in print) */}
+                <div className="no-print space-y-4 mb-6">
+
+                  {/* Disclaimer banner */}
+                  {disclaimer && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex gap-3">
+                      <span className="text-amber-500 flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                      </span>
+                      <p className="text-amber-800 text-xs leading-relaxed">
+                        <span className="font-devanagari">{disclaimer.split(" / ")[0]}</span>
+                        <span className="block font-sans mt-0.5">{disclaimer.split(" / ")[1]}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={handleDownloadPDF}
+                      className="flex-1 flex items-center justify-center gap-2 bg-oxblood text-gold border border-gold/40 py-3 rounded-xl text-sm font-semibold hover:bg-oxblood-dark transition-colors font-sans"
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download PDF
+                    </button>
+                    <button
+                      onClick={handleWhatsApp}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl text-sm font-semibold hover:bg-[#1ebe5a] transition-colors font-sans"
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                      </svg>
+                      Receive on WhatsApp
+                    </button>
+                    <button
+                      onClick={() => { setStep("form"); setAgreement(""); setDisclaimer(""); }}
+                      className="sm:flex-none flex items-center justify-center gap-2 border border-gold/40 text-oxblood py-3 px-5 rounded-xl text-sm font-semibold hover:bg-gold/8 transition-colors font-sans"
+                    >
+                      Generate Another
+                    </button>
+                  </div>
+                </div>
+
+                {/* Agreement document */}
+                <div
+                  id="agreement-print-area"
+                  className="bg-white rounded-2xl border border-gold/25 shadow-sm overflow-hidden"
+                >
+                  <div className="no-print bg-oxblood px-5 py-3 flex items-center justify-between">
+                    <h2 className="text-gold font-bold text-sm font-sans">Agreement Document</h2>
+                    <span className="text-gold/50 text-xs font-sans">Scroll to read · Print to save</span>
+                  </div>
+                  <div className="p-6 sm:p-8">
+                    <div id="agreement-scroll" className="max-h-[60vh] overflow-y-auto">
+                      <div className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-sans">
+                        {agreement}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        </main>
+
+        {/* ── Footer ── */}
+        <footer className="no-print bg-oxblood px-6 py-6 text-center mt-8">
+          <p className="text-gold/80 text-sm font-sans">
+            © {year} Mudrankseva. All rights reserved.
+          </p>
+          <p className="text-gold/40 text-xs mt-1 font-sans">
+            Maharashtra Property Services · AI-Powered Legal Documents
+          </p>
+        </footer>
+
+      </div>
+    </>
+  );
+}

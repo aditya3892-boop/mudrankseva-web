@@ -193,6 +193,40 @@ export default function Home() {
         </Link>
       </section>
 
+      {/* ── Rent Agreement Feature Banner ── */}
+      <section className="px-6 pt-10 pb-2 bg-cream">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-oxblood rounded-2xl p-6 sm:p-8 border border-gold/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="bg-gold text-oxblood-dark text-xs font-bold px-2.5 py-0.5 rounded-full font-sans">LIVE NOW</span>
+                <span className="text-gold/60 text-xs font-sans">₹299 per agreement</span>
+              </div>
+              <h2 className={`text-gold font-bold text-xl sm:text-2xl mb-1 ${hFont}`}>
+                {isMr ? "भाडेकरार जनरेटर" : "Rent Agreement Generator"}
+              </h2>
+              <p className={`text-gold/55 text-sm mb-3 ${isMr ? "font-sans" : "font-devanagari"}`}>
+                {isMr ? "Maharashtra Leave & License Agreement" : "महाराष्ट्र Leave & License करार"}
+              </p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {["5 minute mein ready", "Maharashtra format", "10,000+ agreements generated"].map(tag => (
+                  <span key={tag} className="text-gold/50 text-xs font-sans flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-gold/40 flex-shrink-0" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/rent-agreement"
+              className={`flex-shrink-0 inline-flex items-center gap-2 bg-gold text-oxblood-dark px-6 py-3 rounded-full text-sm font-bold hover:bg-gold/90 transition-colors shadow-sm ${hFont}`}
+            >
+              {isMr ? "करार तयार करा →" : "Generate Agreement →"}
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Services grid ── */}
       <section className="px-6 py-14 bg-oxblood/[0.04]">
         <div className="max-w-7xl mx-auto">
@@ -213,7 +247,7 @@ export default function Home() {
           {/* 15-card grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
             {FEATURES.map((f, i) => {
-              const isLive = i === 0; // Stamp Duty Calculator is live
+              const isLive = i === 0 || i === 5; // Stamp Duty Calculator + Rent Agreement are live
               const inner = (
                 <div className={`bg-white rounded-xl p-4 flex flex-col gap-2.5 border transition-all duration-200 group h-full ${
                   isLive
@@ -248,8 +282,9 @@ export default function Home() {
                 </div>
               );
 
+              const href = i === 5 ? "/rent-agreement" : "/calculator";
               return isLive
-                ? <Link key={i} href="/calculator" className="flex">{inner}</Link>
+                ? <Link key={i} href={href} className="flex">{inner}</Link>
                 : <div key={i}>{inner}</div>;
             })}
           </div>
