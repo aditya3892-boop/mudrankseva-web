@@ -294,22 +294,22 @@ export default function Calculator() {
       </header>
 
       {/* Page title */}
-      <div className="bg-oxblood/[0.04] border-b border-gold/15 px-6 py-5">
+      <div className="border-b border-gold/10 px-6 py-8">
         <div className="max-w-6xl mx-auto">
-          <Link href="/" className={`text-xs text-oxblood/60 hover:text-oxblood transition-colors mb-2 inline-block ${hFont}`}>{cc.backHome}</Link>
-          <h1 className={`text-2xl sm:text-3xl font-bold text-oxblood ${hFont}`}>{cc.pageTitle}</h1>
-          <p className={`text-ink/50 text-sm mt-1 ${hFont}`}>{cc.subtitle}</p>
+          <Link href="/" className="text-[11px] text-ink/30 hover:text-oxblood transition-colors mb-4 inline-block uppercase tracking-widest font-sans">{cc.backHome}</Link>
+          <h1 className={`text-3xl sm:text-4xl font-bold text-oxblood tracking-tight ${hFont}`}>{cc.pageTitle}</h1>
+          <p className={`text-ink/40 text-sm mt-2 ${hFont}`}>{cc.subtitle}</p>
         </div>
       </div>
 
-      <main className="flex-1 px-4 sm:px-6 py-8">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-8">
+      <main className="flex-1 px-4 sm:px-6 py-10">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-10">
 
           {/* ── LEFT: Form ── */}
-          <div className="space-y-5">
+          <div className="space-y-6">
 
             {/* Marathi Input Mode toggle */}
-            <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-gold/25">
+            <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-gold/15">
               <span className="text-sm font-devanagari text-ink font-medium">{cc.marathiMode}</span>
               <button
                 onClick={() => setLang(lang === "en" ? "mr" : "en")}
@@ -480,23 +480,24 @@ export default function Calculator() {
             </div>
 
             {/* Calculate + disclaimer */}
-            <div className="pt-1 space-y-2">
+            <div className="pt-2 space-y-3">
               <button onClick={handleCalculate} disabled={!result || saving}
-                className={`w-full py-3.5 rounded-xl border font-bold text-sm transition-all ${hFont} ${
+                className={`w-full py-4 rounded-xl border font-bold text-sm tracking-wide transition-all ${hFont} ${
                   leadSaved ? "bg-green-700 text-white border-green-700"
-                  : "bg-oxblood text-gold border-gold/50 hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed"
+                  : "bg-oxblood text-gold border-gold/30 hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed"
                 }`}>
                 {saving ? "…" : leadSaved ? `✓ ${cc.leadSaved}` : cc.calculateBtn}
               </button>
-              <p className={`text-xs text-ink/35 text-center ${hFont}`}>{cc.disclaimer2}</p>
+              <p className={`text-xs text-ink/25 text-center ${hFont}`}>{cc.disclaimer2}</p>
             </div>
           </div>
 
           {/* ── RIGHT: Result card ── */}
           <div className="lg:sticky lg:top-6 self-start space-y-3">
-            <div className="bg-white rounded-2xl border border-gold/30 overflow-hidden shadow-sm">
-              <div className="bg-oxblood px-5 py-4">
-                <h2 className={`text-gold font-bold text-base ${hFont}`}>{cc.resultTitle}</h2>
+            <div className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
+              <div className="h-[2px] bg-gradient-to-r from-gold/50 via-gold to-gold/50" />
+              <div className="px-5 py-4 border-b border-gold/10">
+                <h2 className={`text-oxblood font-bold text-sm tracking-wide ${hFont}`}>{cc.resultTitle}</h2>
               </div>
 
               <div className="px-5 py-4">
@@ -635,7 +636,7 @@ export default function Calculator() {
 
             {/* Verify IGR */}
             <a href="https://igrmaharashtra.gov.in/eASR/eASRCommon.aspx" target="_blank" rel="noopener noreferrer"
-              className={`flex items-center justify-center gap-2 w-full border border-gold/40 rounded-xl py-2.5 text-xs font-semibold text-gold hover:bg-gold/8 transition-colors ${hFont}`}>
+              className={`flex items-center justify-center gap-2 w-full border border-gold/20 rounded-xl py-2.5 text-xs font-semibold text-gold/60 hover:text-gold hover:border-gold/40 transition-colors ${hFont}`}>
               {cc.verifyBtn}
               <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -646,8 +647,9 @@ export default function Calculator() {
         </div>
       </main>
 
-      <footer className="bg-oxblood px-6 py-6 text-center mt-8">
-        <p className={`text-gold/80 text-sm ${hFont}`}>© {new Date().getFullYear()} {c.footerBrand}. {c.footerRights}</p>
+      <footer className="bg-oxblood px-6 py-10 text-center mt-auto">
+        <p className="text-gold/60 text-sm font-sans">© {new Date().getFullYear()} {c.footerBrand}. {c.footerRights}</p>
+        <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · Digital. Accurate. Compliant.</p>
       </footer>
     </div>
 

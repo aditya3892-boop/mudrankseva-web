@@ -3,129 +3,97 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CONTENT, FEATURES, type Lang } from "@/lib/content";
+import { type Lang } from "@/lib/content";
 
-/* ── Icons (gold-coloured via text-gold on parent) ─────────────────── */
-const ICONS = [
-  /* 1 Stamp Duty Calculator */
-  <svg key="0" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="4" y="2" width="16" height="20" rx="2"/>
-    <line x1="8" y1="7" x2="16" y2="7"/>
-    <circle cx="8.5" cy="12" r="0.7" fill="currentColor"/>
-    <circle cx="12" cy="12" r="0.7" fill="currentColor"/>
-    <circle cx="15.5" cy="12" r="0.7" fill="currentColor"/>
-    <circle cx="8.5" cy="16" r="0.7" fill="currentColor"/>
-    <circle cx="12" cy="16" r="0.7" fill="currentColor"/>
-    <line x1="14" y1="16" x2="17" y2="16"/>
-  </svg>,
-
-  /* 2 Market Value Finder */
-  <svg key="1" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/>
-    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    <path d="M11 7a4 4 0 0 1 4 4"/>
-  </svg>,
-
-  /* 3 7/12 Health Check */
-  <svg key="2" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2L4 5v5c0 4.5 3.5 8.7 8 10 4.5-1.3 8-5.5 8-10V5l-8-3z"/>
-    <polyline points="9 12 11 14 15 10"/>
-  </svg>,
-
-  /* 4 Gazette Name Change */
-  <svg key="3" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>,
-
-  /* 5 Automated Deed Drafting */
-  <svg key="4" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
-    <line x1="8" y1="13" x2="16" y2="13"/>
-    <line x1="8" y1="17" x2="13" y2="17"/>
-    <path d="M15 16l1.5 1.5L19 15"/>
-  </svg>,
-
-  /* 6 Digital Rent Agreement */
-  <svg key="5" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    <circle cx="12" cy="16" r="1" fill="currentColor"/>
-  </svg>,
-
-  /* 7 Vertical Property Card */
-  <svg key="6" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 21h18"/>
-    <rect x="7" y="3" width="10" height="18" rx="1"/>
-    <line x1="10" y1="9" x2="14" y2="9"/>
-    <line x1="10" y1="13" x2="14" y2="13"/>
-    <line x1="10" y1="17" x2="14" y2="17"/>
-  </svg>,
-
-  /* 8 Mutation (Ferfar) Alerts */
-  <svg key="7" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    <circle cx="19" cy="4" r="2.5" fill="currentColor" stroke="none"/>
-  </svg>,
-
-  /* 9 Property Tax Transfer */
-  <svg key="8" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-    <path d="M0 12l2-2m20 2l-2-2"/>
-  </svg>,
-
-  /* 10 Public Notice AI */
-  <svg key="9" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-    <circle cx="19" cy="5" r="2" fill="currentColor" stroke="none"/>
-  </svg>,
-
-  /* 11 Certified Valuation */
-  <svg key="10" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="6"/>
-    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-    <polyline points="10 8 11.5 9.5 14 7"/>
-  </svg>,
-
-  /* 12 Index-II Retrieval */
-  <svg key="11" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <ellipse cx="12" cy="5" rx="9" ry="3"/>
-    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
-  </svg>,
-
-  /* 13 Society NOC Portal */
-  <svg key="12" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/>
-    <polyline points="16 11 18 13 22 9"/>
-  </svg>,
-
-  /* 14 Heirship Assistant */
-  <svg key="13" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="3" r="2"/>
-    <path d="M12 5v5"/>
-    <path d="M9 10h6"/>
-    <path d="M9 10v3"/>
-    <path d="M15 10v3"/>
-    <circle cx="6" cy="17" r="2"/>
-    <circle cx="18" cy="17" r="2"/>
-  </svg>,
-
-  /* 15 Adjudication Tracker */
-  <svg key="14" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="12 6 12 12 16 14"/>
-  </svg>,
+/* ── Active services ─────────────────────────────────────────────── */
+const ACTIVE = [
+  {
+    href: "/calculator",
+    titleEn: "Stamp Duty Calculator",
+    titleMr: "मुद्रांक शुल्क कॅल्क्युलेटर",
+    descEn: "Calculate stamp duty and registration charges for any Maharashtra property transaction. District-accurate, 2026–27 rates.",
+    descMr: "महाराष्ट्रातील मालमत्ता व्यवहारांसाठी मुद्रांक शुल्क व नोंदणी शुल्क मोजा — जिल्हानिहाय.",
+    ctaEn: "Open Calculator",
+    ctaMr: "कॅल्क्युलेटर उघडा",
+    price: null,
+    icon: (
+      <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2"/>
+        <line x1="8" y1="7" x2="16" y2="7"/>
+        <circle cx="8.5" cy="12" r="0.75" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12" r="0.75" fill="currentColor" stroke="none"/>
+        <circle cx="15.5" cy="12" r="0.75" fill="currentColor" stroke="none"/>
+        <circle cx="8.5" cy="16" r="0.75" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="16" r="0.75" fill="currentColor" stroke="none"/>
+        <line x1="14" y1="16" x2="17" y2="16"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/rent-agreement",
+    titleEn: "Rent Agreement Generator",
+    titleMr: "भाडेकरार जनरेटर",
+    descEn: "Generate a legally formatted Maharashtra Leave & License Agreement in minutes. AI-drafted, print-ready, court compliant.",
+    descMr: "AI द्वारे महाराष्ट्र Leave & License करार काही मिनिटांत तयार करा — प्रिंट-रेडी.",
+    ctaEn: "Generate Agreement",
+    ctaMr: "करार तयार करा",
+    price: "₹299",
+    icon: (
+      <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="13" y2="17"/>
+        <path d="M15 17l1.5 1.5L19 16"/>
+      </svg>
+    ),
+  },
 ];
 
-/* ── Page ───────────────────────────────────────────────────────────── */
+/* ── Coming soon services ─────────────────────────────────────────── */
+const COMING = [
+  {
+    titleEn: "Sale Deed Drafting",
+    titleMr: "विक्री खत मसुदा",
+    descEn: "AI-drafted sale deeds for Maharashtra property transfers.",
+    descMr: "मालमत्ता हस्तांतरणासाठी AI-निर्मित विक्री खत.",
+    icon: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    ),
+  },
+  {
+    titleEn: "Property Mutation Tracker",
+    titleMr: "मालमत्ता फेरफार ट्रॅकर",
+    descEn: "Track property mutation status across all Maharashtra districts.",
+    descMr: "महाराष्ट्रातील सर्व जिल्ह्यांमध्ये फेरफार स्थिती ट्रॅक करा.",
+    icon: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    ),
+  },
+  {
+    titleEn: "7/12 Utara Records",
+    titleMr: "७/१२ उतारा नोंदी",
+    descEn: "Digital access to 7/12 land records from all districts.",
+    descMr: "सर्व जिल्ह्यांचे ७/१२ उतारा जमीन अभिलेख.",
+    icon: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+      </svg>
+    ),
+  },
+];
+
+/* ── Page ─────────────────────────────────────────────────────────── */
 export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
-  const c = CONTENT[lang];
   const isMr = lang === "mr";
   const hFont = isMr ? "font-devanagari" : "font-sans";
   const year = new Date().getFullYear();
@@ -162,144 +130,141 @@ export default function Home() {
               मराठी
             </button>
           </div>
-
-          <span className={`hidden sm:inline text-xs text-gold/80 border border-gold/40 rounded-full px-3 py-1 tracking-widest uppercase ${isMr ? "font-devanagari tracking-normal" : ""}`}>
-            {c.headerBadge}
+          <span className="hidden sm:inline text-xs text-gold/70 border border-gold/35 rounded-full px-3 py-1 tracking-widest uppercase font-sans">
+            Maharashtra
           </span>
         </div>
       </header>
 
       {/* ── Hero ── */}
-      <section className="flex flex-col items-center px-6 py-16 text-center bg-cream">
-        <div className={`inline-flex items-center gap-2 bg-oxblood/10 text-oxblood text-xs font-semibold px-4 py-1.5 rounded-full mb-8 tracking-widest uppercase ${hFont}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse flex-shrink-0" />
-          {c.comingSoon}
-        </div>
-
-        <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold text-oxblood leading-tight mb-4 max-w-3xl ${hFont}`}>
-          {c.heroTitle[0]}<br />{c.heroTitle[1]}
-        </h1>
-
-        <p className={`max-w-lg text-ink/55 text-sm sm:text-base leading-relaxed ${hFont}`}>
-          {c.heroDesc}
+      <section className="flex flex-col items-center px-6 py-24 sm:py-32 text-center bg-cream">
+        <p className="text-[11px] text-gold/60 font-sans uppercase tracking-[0.2em] mb-8">
+          {isMr ? "महाराष्ट्र मालमत्ता सेवा" : "Maharashtra Property Services"}
         </p>
 
-        {/* Primary CTA */}
-        <Link
-          href="/calculator"
-          className={`mt-8 inline-flex items-center gap-2 bg-oxblood text-gold border border-gold/50 px-7 py-3 rounded-full text-sm font-semibold hover:bg-oxblood-dark transition-colors shadow-sm ${hFont}`}
-        >
-          {c.tryCalculator}
-        </Link>
+        <h1 className={`text-4xl sm:text-5xl font-bold text-oxblood leading-[1.1] tracking-tight mb-6 max-w-xl ${hFont}`}>
+          {isMr ? (
+            <>महाराष्ट्रासाठी<br />मालमत्ता सेवा.</>
+          ) : (
+            <>Property Services,<br />Built for Maharashtra.</>
+          )}
+        </h1>
+
+        <p className={`max-w-sm text-ink/45 text-base leading-relaxed ${hFont}`}>
+          {isMr
+            ? "मुद्रांक शुल्क, भाडेकरार आणि मालमत्ता अनुपालनासाठी डिजिटल साधने."
+            : "Expert digital tools for stamp duty, rent agreements, and property compliance."}
+        </p>
+
+        {/* Bilingual crossover line */}
+        <p className={`mt-3 text-xs text-ink/25 ${isMr ? "font-sans" : "font-devanagari"}`}>
+          {isMr
+            ? "Stamp Duty · Rent Agreement · Property Records"
+            : "मुद्रांक शुल्क · भाडेकरार · मालमत्ता नोंदी"}
+        </p>
       </section>
 
-      {/* ── Rent Agreement Feature Banner ── */}
-      <section className="px-6 pt-10 pb-2 bg-cream">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-oxblood rounded-2xl p-6 sm:p-8 border border-gold/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="bg-gold text-oxblood-dark text-xs font-bold px-2.5 py-0.5 rounded-full font-sans">LIVE NOW</span>
-                <span className="text-gold/60 text-xs font-sans">₹299 per agreement</span>
-              </div>
-              <h2 className={`text-gold font-bold text-xl sm:text-2xl mb-1 ${hFont}`}>
-                {isMr ? "भाडेकरार जनरेटर" : "Rent Agreement Generator"}
-              </h2>
-              <p className={`text-gold/55 text-sm mb-3 ${isMr ? "font-sans" : "font-devanagari"}`}>
-                {isMr ? "Maharashtra Leave & License Agreement" : "महाराष्ट्र Leave & License करार"}
-              </p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {["5 minute mein ready", "Maharashtra format", "10,000+ agreements generated"].map(tag => (
-                  <span key={tag} className="text-gold/50 text-xs font-sans flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-gold/40 flex-shrink-0" />
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <Link
-              href="/rent-agreement"
-              className={`flex-shrink-0 inline-flex items-center gap-2 bg-gold text-oxblood-dark px-6 py-3 rounded-full text-sm font-bold hover:bg-gold/90 transition-colors shadow-sm ${hFont}`}
-            >
-              {isMr ? "करार तयार करा →" : "Generate Agreement →"}
-            </Link>
+      {/* ── Active services ── */}
+      <section className="px-6 pb-20 bg-cream">
+        <div className="max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {ACTIVE.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                className="group flex flex-col bg-white rounded-2xl border border-gold/20 hover:border-gold/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+              >
+                {/* Thin gold top accent */}
+                <div className="h-[2px] bg-gradient-to-r from-gold/60 via-gold to-gold/60 flex-shrink-0" />
+
+                <div className="flex flex-col flex-1 p-7 gap-6">
+                  {/* Icon row */}
+                  <div className="flex items-start justify-between">
+                    <span className="text-gold">{s.icon}</span>
+                    {s.price && (
+                      <span className="text-xs font-bold text-oxblood bg-gold/15 border border-gold/25 px-2.5 py-0.5 rounded-full font-sans tracking-wide">
+                        {s.price}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title + subtitle */}
+                  <div>
+                    <h2 className={`text-xl font-bold text-oxblood leading-snug mb-1 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                      {isMr ? s.titleMr : s.titleEn}
+                    </h2>
+                    <p className={`text-xs text-ink/35 ${isMr ? "font-sans" : "font-devanagari"}`}>
+                      {isMr ? s.titleEn : s.titleMr}
+                    </p>
+                  </div>
+
+                  {/* Description */}
+                  <p className={`text-sm text-ink/50 leading-relaxed flex-1 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                    {isMr ? s.descMr : s.descEn}
+                  </p>
+
+                  {/* CTA */}
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-oxblood">
+                    <span className={hFont}>{isMr ? s.ctaMr : s.ctaEn}</span>
+                    <span className="text-gold transition-transform duration-200 group-hover:translate-x-1">→</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── Services grid ── */}
-      <section className="px-6 py-14 bg-oxblood/[0.04]">
-        <div className="max-w-7xl mx-auto">
-
-          {/* Section header */}
-          <div className="text-center mb-10">
-            <h2 className={`text-2xl font-bold text-oxblood mb-1.5 ${hFont}`}>
-              {c.servicesTitle}
-            </h2>
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="h-px w-10 bg-gold/50" />
-              <div className="w-1.5 h-1.5 rotate-45 bg-gold" />
-              <div className="h-px w-10 bg-gold/50" />
-            </div>
-            <p className={`text-ink/40 text-sm ${hFont}`}>{c.servicesSubtitle}</p>
+      {/* ── Coming soon ── */}
+      <section className="px-6 pt-10 pb-24 border-t border-gold/10 bg-cream">
+        <div className="max-w-3xl mx-auto">
+          {/* Divider label */}
+          <div className="flex items-center gap-4 mb-10">
+            <div className="h-px flex-1 bg-gold/15" />
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-ink/25">
+              {isMr ? "लवकरच येणार" : "Coming Soon"}
+            </span>
+            <div className="h-px flex-1 bg-gold/15" />
           </div>
 
-          {/* 15-card grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-            {FEATURES.map((f, i) => {
-              const isLive = i === 0 || i === 5; // Stamp Duty Calculator + Rent Agreement are live
-              const inner = (
-                <div className={`bg-white rounded-xl p-4 flex flex-col gap-2.5 border transition-all duration-200 group h-full ${
-                  isLive
-                    ? "border-gold/40 hover:border-gold hover:shadow-lg cursor-pointer"
-                    : "border-gold/15 hover:border-gold/50 hover:shadow-md"
-                }`}>
-                  <div className="text-gold mb-0.5">{ICONS[i]}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {COMING.map((s) => (
+              <div
+                key={s.titleEn}
+                className="bg-white/60 rounded-xl border border-gold/10 p-5"
+              >
+                <span className="text-ink/20 block mb-3.5">{s.icon}</span>
 
-                  <h3 className={`font-bold text-oxblood text-sm leading-snug ${isMr ? "font-devanagari" : "font-sans"}`}>
-                    {isMr ? f.titleMr : f.titleEn}
-                  </h3>
+                <h3 className={`text-sm font-semibold text-ink/40 leading-snug mb-1 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                  {isMr ? s.titleMr : s.titleEn}
+                </h3>
 
-                  <p className="text-xs text-ink/55 leading-relaxed font-sans flex-1">
-                    {f.descEn}
-                  </p>
+                <p className={`text-xs text-ink/30 leading-relaxed mb-4 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                  {isMr ? s.descMr : s.descEn}
+                </p>
 
-                  <div className="h-px bg-gold/20 my-0.5" />
-
-                  <p className="text-xs text-oxblood/50 font-devanagari leading-relaxed">
-                    {f.descMr}
-                  </p>
-
-                  {isLive ? (
-                    <span className={`self-start mt-1 text-xs font-semibold text-oxblood-dark bg-gold px-2.5 py-0.5 rounded-full ${hFont}`}>
-                      {isMr ? "उघडा →" : "Open →"}
-                    </span>
-                  ) : (
-                    <span className={`self-start mt-1 text-xs font-semibold text-gold border border-gold/40 px-2.5 py-0.5 rounded-full ${hFont}`}>
-                      {c.comingSoon}
-                    </span>
-                  )}
-                </div>
-              );
-
-              const href = i === 5 ? "/rent-agreement" : "/calculator";
-              return isLive
-                ? <Link key={i} href={href} className="flex">{inner}</Link>
-                : <div key={i}>{inner}</div>;
-            })}
+                <span className="inline-block text-[9px] font-sans uppercase tracking-widest text-ink/20 border border-ink/10 px-2 py-0.5 rounded-full">
+                  {isMr ? "लवकरच" : "Coming Soon"}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-oxblood px-6 py-8 text-center">
-        <p className={`text-gold/80 text-sm ${hFont}`}>
-          © {year} {c.footerBrand}. {c.footerRights}
+      <footer className="bg-oxblood px-6 py-10 text-center mt-auto">
+        <p className="text-gold/60 text-sm font-sans">
+          © {year} Mudrankseva. All rights reserved.
         </p>
-        <p className={`text-gold/40 text-xs mt-1.5 ${hFont}`}>
-          {c.footerTagline}
+        <p className="text-gold/30 text-xs mt-2 font-sans tracking-wide">
+          Maharashtra Property Services · Digital. Accurate. Compliant.
+        </p>
+        <p className="text-gold/20 text-xs mt-1 font-devanagari">
+          महाराष्ट्र मालमत्ता सेवा
         </p>
       </footer>
+
     </div>
   );
 }

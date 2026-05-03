@@ -83,10 +83,10 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block mb-1.5">
-        <span className="text-sm font-semibold text-oxblood font-sans">{label}</span>
-        {optional && <span className="ml-1.5 text-xs text-ink/40 font-sans">(optional)</span>}
-        <span className="block text-xs text-ink/45 font-devanagari mt-0.5">{mr}</span>
+      <label className="block mb-2">
+        <span className="text-sm font-semibold text-oxblood font-sans tracking-tight">{label}</span>
+        {optional && <span className="ml-1.5 text-xs text-ink/30 font-sans">(optional)</span>}
+        <span className="block text-[11px] text-ink/30 font-devanagari mt-0.5">{mr}</span>
       </label>
       {children}
     </div>
@@ -99,25 +99,23 @@ function SectionCard({
   title: string; mr: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gold/25 overflow-hidden shadow-sm">
-      <div className="bg-oxblood/[0.05] px-5 py-3 border-b border-gold/20 flex items-center gap-3">
-        <div className="w-1 h-4 bg-gold rounded-full" />
-        <div>
-          <span className="font-bold text-oxblood text-sm font-sans">{title}</span>
-          <span className="ml-2 text-xs text-oxblood/50 font-devanagari">{mr}</span>
-        </div>
+    <div className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
+      <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
+      <div className="px-6 py-4 border-b border-gold/10 flex items-center gap-2.5">
+        <span className="font-semibold text-oxblood text-sm font-sans tracking-tight">{title}</span>
+        <span className="text-ink/25 text-xs font-devanagari">{mr}</span>
       </div>
-      <div className="p-5 space-y-4">{children}</div>
+      <div className="p-6 space-y-5">{children}</div>
     </div>
   );
 }
 
 function InputStyle(extra = "") {
-  return `w-full px-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink placeholder:text-ink/30 text-sm font-sans ${extra}`;
+  return `w-full px-4 py-3 border border-gold/20 focus:border-gold/60 focus:outline-none rounded-xl bg-white text-ink placeholder:text-ink/25 text-sm font-sans ${extra}`;
 }
 
 function SelectStyle() {
-  return "w-full appearance-none px-4 py-3 border border-gold/30 focus:border-gold focus:outline-none rounded-xl bg-white text-ink text-sm font-sans pr-9 cursor-pointer";
+  return "w-full appearance-none px-4 py-3 border border-gold/20 focus:border-gold/60 focus:outline-none rounded-xl bg-white text-ink text-sm font-sans pr-9 cursor-pointer";
 }
 
 function ChevronDown() {
@@ -136,7 +134,7 @@ function PayerToggle({
   value: Payer; onChange(v: Payer): void;
 }) {
   return (
-    <div className="flex rounded-xl border border-gold/30 overflow-hidden text-xs font-semibold">
+    <div className="flex rounded-xl border border-gold/20 overflow-hidden text-xs font-semibold">
       {PAYERS.map((p, i) => (
         <button
           key={p}
@@ -333,27 +331,27 @@ export default function RentAgreement() {
         </header>
 
         {/* ── Page title ── */}
-        <div className="no-print bg-oxblood/[0.04] border-b border-gold/15 px-6 py-5">
+        <div className="no-print border-b border-gold/10 px-6 py-8">
           <div className="max-w-3xl mx-auto">
-            <Link href="/" className="text-xs text-oxblood/60 hover:text-oxblood transition-colors mb-2 inline-block font-sans">
-              {isMr ? "← मुख्यपृष्ठ" : "← Back to home"}
+            <Link href="/" className="text-[11px] text-ink/30 hover:text-oxblood transition-colors mb-4 inline-block uppercase tracking-widest font-sans">
+              {isMr ? "← मुख्यपृष्ठ" : "← Back"}
             </Link>
-            <h1 className={`text-2xl sm:text-3xl font-bold text-oxblood ${isMr ? "font-devanagari" : "font-sans"}`}>
+            <h1 className={`text-3xl sm:text-4xl font-bold text-oxblood tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>
               {isMr ? "भाडेकरार जनरेटर" : "Rent Agreement Generator"}
             </h1>
-            <p className="text-ink/50 text-sm mt-1 font-sans">
+            <p className="text-ink/40 text-sm mt-2 font-sans">
               {isMr ? "महाराष्ट्र Leave and License Agreement — ₹२९९" : "Maharashtra Leave & License Agreement — ₹299"}
             </p>
           </div>
         </div>
 
         {/* ── Main ── */}
-        <main className="flex-1 px-4 sm:px-6 py-8">
+        <main className="flex-1 px-4 sm:px-6 py-10">
           <div className="max-w-3xl mx-auto">
 
             {/* ── FORM STEP ── */}
             {step === "form" && (
-              <div className="space-y-5">
+              <div className="space-y-6">
 
                 {/* Landlord */}
                 <SectionCard title="Landlord Details" mr="मालकाची माहिती">
@@ -553,34 +551,34 @@ export default function RentAgreement() {
 
                 {/* Error */}
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-sans">
+                  <div className="bg-oxblood/5 border border-oxblood/15 rounded-xl px-4 py-3 text-sm text-oxblood font-sans">
                     {error}
                   </div>
                 )}
 
                 {/* Price + CTA */}
-                <div className="bg-oxblood rounded-2xl p-6 border border-gold/40">
-                  <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="bg-oxblood rounded-2xl p-7 border border-gold/20">
+                  <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
-                      <h3 className="text-gold font-bold text-lg font-sans">Ready to generate?</h3>
-                      <p className="text-gold/60 text-xs font-devanagari mt-0.5">AI द्वारे Maharashtra करार तयार होईल</p>
+                      <h3 className="text-gold font-bold text-base font-sans tracking-tight">Ready to generate?</h3>
+                      <p className="text-gold/50 text-xs font-devanagari mt-1">AI द्वारे Maharashtra करार तयार होईल</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-gold font-black text-2xl font-sans">₹299</div>
-                      <div className="text-gold/50 text-xs font-sans">one-time</div>
+                      <div className="text-gold font-bold text-2xl font-sans tracking-tight">₹299</div>
+                      <div className="text-gold/40 text-xs font-sans">one-time</div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-5">
                     {["5 min mein ready", "Maharashtra format", "Print-ready PDF"].map(tag => (
-                      <span key={tag} className="bg-gold/15 text-gold text-xs px-2.5 py-1 rounded-full font-sans">{tag}</span>
+                      <span key={tag} className="bg-gold/10 text-gold/70 text-xs px-2.5 py-1 rounded-full font-sans border border-gold/15">{tag}</span>
                     ))}
                   </div>
 
                   <button
                     onClick={handlePayAndGenerate}
                     disabled={!isValid() || paying}
-                    className="w-full py-4 rounded-xl bg-gold text-oxblood-dark font-black text-base transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl bg-gold text-oxblood-dark font-bold text-sm tracking-wide transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
                   >
                     {paying ? (
                       <>
@@ -610,7 +608,7 @@ export default function RentAgreement() {
                 </div>
 
                 {/* Trust note */}
-                <p className="text-center text-xs text-ink/35 font-sans">
+                <p className="text-center text-xs text-ink/25 font-sans">
                   Secure payment via Razorpay · Your data is not stored · 10,000+ agreements generated
                 </p>
 
@@ -637,14 +635,14 @@ export default function RentAgreement() {
 
                   {/* Disclaimer banner */}
                   {disclaimer && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex gap-3">
-                      <span className="text-amber-500 flex-shrink-0 mt-0.5">
+                    <div className="bg-gold/8 border border-gold/20 rounded-xl px-4 py-3.5 flex gap-3">
+                      <span className="text-gold/60 flex-shrink-0 mt-0.5">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                           <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                         </svg>
                       </span>
-                      <p className="text-amber-800 text-xs leading-relaxed">
+                      <p className="text-ink/55 text-xs leading-relaxed">
                         <span className="font-devanagari">{disclaimer.split(" / ")[0]}</span>
                         <span className="block font-sans mt-0.5">{disclaimer.split(" / ")[1]}</span>
                       </p>
@@ -655,7 +653,7 @@ export default function RentAgreement() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={handleDownloadPDF}
-                      className="flex-1 flex items-center justify-center gap-2 bg-oxblood text-gold border border-gold/40 py-3 rounded-xl text-sm font-semibold hover:bg-oxblood-dark transition-colors font-sans"
+                      className="flex-1 flex items-center justify-center gap-2 bg-oxblood text-gold border border-gold/25 py-3.5 rounded-xl text-sm font-semibold tracking-wide hover:bg-oxblood-dark transition-colors font-sans"
                     >
                       <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -665,7 +663,7 @@ export default function RentAgreement() {
                     </button>
                     <button
                       onClick={() => { setStep("form"); setAgreement(""); setDisclaimer(""); }}
-                      className="sm:flex-none flex items-center justify-center gap-2 border border-gold/40 text-oxblood py-3 px-5 rounded-xl text-sm font-semibold hover:bg-gold/8 transition-colors font-sans"
+                      className="sm:flex-none flex items-center justify-center gap-2 border border-gold/15 text-ink/50 hover:text-oxblood hover:border-gold/40 py-3.5 px-5 rounded-xl text-sm font-semibold transition-colors font-sans"
                     >
                       Generate Another
                     </button>
@@ -675,11 +673,14 @@ export default function RentAgreement() {
                 {/* Agreement document */}
                 <div
                   id="agreement-print-area"
-                  className="bg-white rounded-2xl border border-gold/25 shadow-sm overflow-hidden"
+                  className="bg-white rounded-2xl border border-gold/15 overflow-hidden"
                 >
-                  <div className="no-print bg-oxblood px-5 py-3 flex items-center justify-between">
-                    <h2 className="text-gold font-bold text-sm font-sans">Agreement Document</h2>
-                    <span className="text-gold/50 text-xs font-sans">Scroll to read · Print to save</span>
+                  <div className="no-print">
+                    <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
+                    <div className="px-5 py-4 border-b border-gold/10 flex items-center justify-between">
+                      <h2 className="text-oxblood font-bold text-sm font-sans tracking-wide">Agreement Document</h2>
+                      <span className="text-ink/25 text-xs font-sans">Scroll to read · Print to save</span>
+                    </div>
                   </div>
                   <div className="p-6 sm:p-8">
                     <div id="agreement-scroll" className="max-h-[60vh] overflow-y-auto">
@@ -697,11 +698,11 @@ export default function RentAgreement() {
         </main>
 
         {/* ── Footer ── */}
-        <footer className="no-print bg-oxblood px-6 py-6 text-center mt-8">
-          <p className="text-gold/80 text-sm font-sans">
+        <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
+          <p className="text-gold/60 text-sm font-sans">
             © {year} Mudrankseva. All rights reserved.
           </p>
-          <p className="text-gold/40 text-xs mt-1 font-sans">
+          <p className="text-gold/25 text-xs mt-2 font-sans">
             Maharashtra Property Services · AI-Powered Legal Documents
           </p>
         </footer>
