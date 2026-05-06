@@ -228,6 +228,7 @@ export default function RentAgreement() {
   const [disclaimer, setDisclaimer] = useState("");
   const [error, setError]         = useState("");
   const [paying, setPaying]       = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -242,6 +243,11 @@ export default function RentAgreement() {
     setForm(prev => ({ ...prev, startDate: today }));
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsTestMode(params.get("test") === "mdev");
+  }, []);
+
   const set = useCallback(<K extends keyof FormFields>(k: K, v: FormFields[K]) => {
     setForm(prev => ({ ...prev, [k]: v }));
   }, []);
@@ -254,8 +260,8 @@ export default function RentAgreement() {
       form.securityDeposit && form.startDate
     ), [form]);
 
-  const triggerPdf = useCallback((agreementText: string, currentLang: string, currentForm: FormFields) => {
-    generateAgreementPdf({
+  const triggerPdf = useCallback(async (agreementText: string, currentLang: string, currentForm: FormFields, testMode = false) => {
+    await generateAgreementPdf({
       agreement: agreementText,
       lang: currentLang,
       landlordName: currentForm.landlordName,
@@ -263,6 +269,7 @@ export default function RentAgreement() {
       propertyAddress: currentForm.propertyAddress,
       rent: currentForm.monthlyRent,
       startDate: currentForm.startDate,
+      isTest: testMode,
     });
   }, []);
 
@@ -304,7 +311,7 @@ export default function RentAgreement() {
             setAgreement(text);
             setDisclaimer(genJson.disclaimer ?? "");
             setStep("done");
-            triggerPdf(text, lang, form);
+            void triggerPdf(text, lang, form, false);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to generate agreement. Please contact support.");
             setStep("form");
@@ -323,7 +330,12 @@ export default function RentAgreement() {
   }, [form, lang, isValid, paying, triggerPdf]);
 
   const handleTestGenerate = useCallback(async () => {
-    if (!isValid()) return;
+    console.log("[TEST MODE] handleTestGenerate called");
+    console.log("[TEST MODE] isValid:", isValid(), "form snapshot:", { ...form });
+    if (!isValid()) {
+      console.log("[TEST MODE] Blocked — form invalid");
+      return;
+    }
     setError("");
     setStep("generating");
     try {
@@ -333,28 +345,32 @@ export default function RentAgreement() {
         body: JSON.stringify({
           formData: form,
           lang,
-          razorpayOrderId: "order_test",
-          razorpayPaymentId: "test_123",
+          razorpayOrderId: "order_test_mdev",
+          razorpayPaymentId: "test_mdev",
           razorpaySignature: "test_sig",
         }),
       });
       const genJson = await genRes.json() as { agreement?: string; disclaimer?: string; error?: string };
+      console.log("[TEST MODE] API status:", genRes.status, "body:", genJson);
       if (!genRes.ok) throw new Error(genJson.error ?? "Generation failed");
-      const text = genJson.agreement ?? "";
+      const rawText = genJson.agreement ?? "";
+      const text = "*** TEST - NOT FOR USE ***\n\n" + rawText;
       setAgreement(text);
       setDisclaimer(genJson.disclaimer ?? "");
       setStep("done");
-      triggerPdf(text, lang, form);
+      void triggerPdf(text, lang, form, true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed");
+      const msg = err instanceof Error ? err.message : "Generation failed";
+      console.error("[TEST MODE] Error:", msg);
+      setError(msg);
       setStep("form");
     }
   }, [form, lang, isValid, triggerPdf]);
 
   const handleDownloadPdf = useCallback(() => {
     if (!agreement) return;
-    triggerPdf(agreement, lang, form);
-  }, [agreement, lang, form, triggerPdf]);
+    void triggerPdf(agreement, lang, form, isTestMode);
+  }, [agreement, lang, form, triggerPdf, isTestMode]);
 
   const year = new Date().getFullYear();
 
@@ -567,36 +583,64 @@ export default function RentAgreement() {
                 )}
 
                 {/* Price + CTA */}
-                <div className="bg-oxblood rounded-2xl p-7 border border-gold/20">
+                <div className={`rounded-2xl p-7 border ${isTestMode ? "bg-[#2a0a0a] border-red-700/60" : "bg-oxblood border-gold/20"}`}>
+
+                  {isTestMode && (
+                    <div className="mb-4 bg-red-900/60 border border-red-500/50 rounded-xl px-4 py-2.5 text-center">
+                      <span className="text-red-300 font-bold text-xs font-sans tracking-widest uppercase">Test Mode Active — Payment Bypassed</span>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
                       <h3 className={`text-gold font-bold text-base tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaTitle}</h3>
                       <p className="text-gold/50 text-xs font-devanagari mt-1">AI द्वारे Maharashtra करार तयार होईल</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-gold font-bold text-2xl font-sans tracking-tight">₹299</div>
-                      <div className={`text-gold/40 text-xs ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaOnetime}</div>
+                    {!isTestMode && (
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-gold font-bold text-2xl font-sans tracking-tight">₹299</div>
+                        <div className={`text-gold/40 text-xs ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaOnetime}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {!isTestMode && (
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {c.ctaTags.map(tag => (
+                        <span key={tag} className={`bg-gold/10 text-gold/70 text-xs px-2.5 py-1 rounded-full border border-gold/15 ${isMr ? "font-devanagari" : "font-sans"}`}>{tag}</span>
+                      ))}
                     </div>
-                  </div>
+                  )}
 
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {c.ctaTags.map(tag => (
-                      <span key={tag} className={`bg-gold/10 text-gold/70 text-xs px-2.5 py-1 rounded-full border border-gold/15 ${isMr ? "font-devanagari" : "font-sans"}`}>{tag}</span>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handlePayAndGenerate}
-                    disabled={!isValid() || paying}
-                    className={`w-full py-4 rounded-xl bg-gold text-oxblood-dark font-bold text-sm tracking-wide transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isMr ? "font-devanagari" : "font-sans"}`}
-                  >
-                    {paying ? (
-                      <>
-                        <span className="inline-block w-4 h-4 border-2 border-oxblood/30 border-t-oxblood rounded-full animate-spin" />
-                        <span className={isMr ? "font-devanagari" : "font-sans"}>{c.ctaPaying}</span>
-                      </>
-                    ) : c.ctaBtn}
-                  </button>
+                  {isTestMode ? (
+                    <>
+                      <button
+                        onClick={handleTestGenerate}
+                        disabled={!isValid()}
+                        className="w-full py-4 rounded-xl bg-red-700 text-yellow-200 font-bold text-sm tracking-wide transition-all hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-sans"
+                      >
+                        Generate Test Agreement (No Payment)
+                      </button>
+                      {error && (
+                        <div className="mt-3 bg-black/40 border border-red-500/70 rounded-xl px-4 py-3 text-sm text-red-300 font-sans break-words">
+                          <span className="font-bold">Error:</span> {error}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={handlePayAndGenerate}
+                      disabled={!isValid() || paying}
+                      className={`w-full py-4 rounded-xl bg-gold text-oxblood-dark font-bold text-sm tracking-wide transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isMr ? "font-devanagari" : "font-sans"}`}
+                    >
+                      {paying ? (
+                        <>
+                          <span className="inline-block w-4 h-4 border-2 border-oxblood/30 border-t-oxblood rounded-full animate-spin" />
+                          <span className={isMr ? "font-devanagari" : "font-sans"}>{c.ctaPaying}</span>
+                        </>
+                      ) : c.ctaBtn}
+                    </button>
+                  )}
 
                   {!isValid() && (
                     <p className={`text-gold/50 text-xs text-center mt-2 ${isMr ? "font-devanagari" : "font-sans"}`}>
@@ -604,7 +648,7 @@ export default function RentAgreement() {
                     </p>
                   )}
 
-                  {process.env.NODE_ENV === "development" && (
+                  {process.env.NODE_ENV === "development" && !isTestMode && (
                     <button
                       onClick={handleTestGenerate}
                       disabled={!isValid()}
