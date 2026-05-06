@@ -169,8 +169,8 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   let mrFont = false;
   if (isMr) mrFont = await loadDevanagariFont(doc);
 
-  // Use Marathi labels only when the font actually loaded; otherwise English
-  const t        = isMr && mrFont ? L.mr : L.en;
+  // Labels follow lang; font quality degrades gracefully but labels always match
+  const t        = isMr ? L.mr : L.en;
   const fontName = mrFont ? "NotoSansDevanagari" : "helvetica";
   const sf       = (bold = false) => doc.setFont(fontName, bold ? "bold" : "normal");
 
