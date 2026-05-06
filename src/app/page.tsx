@@ -64,6 +64,40 @@ const ACTIVE = [
       </svg>
     ),
   },
+  {
+    href: "/gift-deed",
+    titleEn: "Gift Deed Generator",
+    titleMr: "भेट खत जनरेटर",
+    descEn: "Generate a Maharashtra Gift Deed for property gifted to family members. AI-drafted under Transfer of Property Act 1882 with mandatory registration.",
+    descMr: "कुटुंबाला मालमत्ता भेट देण्यासाठी AI-निर्मित भेट खत — हस्तांतरण मालमत्ता अधिनियम १८८२ अंतर्गत.",
+    ctaEn: "Generate Gift Deed",
+    ctaMr: "भेट खत तयार करा",
+    price: "₹499",
+    icon: (
+      <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 12 20 22 4 22 4 12"/>
+        <rect x="2" y="7" width="20" height="5"/>
+        <line x1="12" y1="22" x2="12" y2="7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/poa",
+    titleEn: "Power of Attorney",
+    titleMr: "मुखत्यारपत्र",
+    descEn: "Generate a Maharashtra Power of Attorney — General, Specific, Property, Financial, or Legal. AI-drafted under Power of Attorney Act 1882.",
+    descMr: "सर्वसाधारण, मालमत्ता, आर्थिक किंवा कायदेशीर मुखत्यारपत्र — मुखत्यारनामा अधिनियम १८८२ अंतर्गत.",
+    ctaEn: "Generate POA",
+    ctaMr: "मुखत्यारपत्र तयार करा",
+    price: "₹499",
+    icon: (
+      <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+      </svg>
+    ),
+  },
 ];
 
 /* ── Coming soon services ─────────────────────────────────────────── */
