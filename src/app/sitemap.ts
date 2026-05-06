@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const BASE = "https://mudrankseva.in";
-const TODAY = new Date("2026-05-06");
+const TODAY = new Date("2026-05-07");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -19,6 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE}/rent-agreement`,
+      lastModified: TODAY,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE}/sales-deed`,
       lastModified: TODAY,
       changeFrequency: "weekly",
       priority: 0.9,

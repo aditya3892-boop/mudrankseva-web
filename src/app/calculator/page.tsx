@@ -646,7 +646,7 @@ export default function Calculator() {
                             </p>
                           </div>
                           <button
-                            onClick={() => generateStampDutyReport({
+                            onClick={() => void generateStampDutyReport({
                               name: reportName,
                               phone: reportPhone,
                               result: result as CalcResult,

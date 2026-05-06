@@ -37,15 +37,9 @@ const INK          = [26,  5,   5]   as const;
 const GREY         = [100, 80,  80]  as const;
 const LIGHT_GREY   = [220, 210, 210] as const;
 
-/* ── Currency formatter ──
-   jsPDF Helvetica covers WinAnsiEncoding (Latin-1 only).
-   U+20B9 RUPEE SIGN is outside that range, so we use "Rs." */
-const fmt = (n: number) =>
-  "Rs. " + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
-
 const pct = (r: number) => `${(r * 100).toFixed(0)}%`;
 
-/* ── English-only labels (jsPDF cannot render Devanagari script) ── */
+/* ── English labels ── */
 const L = {
   reportTitle:   "Stamp Duty Calculation Report",
   reckoner:      "Maharashtra Ready Reckoner 2026-27",
@@ -87,6 +81,32 @@ const L = {
   rural:   "Gram Panchayat / Rural",
 };
 
+/* ── Noto Sans Devanagari font loading ── */
+const NOTO_TTF_URL =
+  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf";
+
+let _cachedFontBase64: string | null = null;
+
+async function loadNotoFont(): Promise<string | null> {
+  if (_cachedFontBase64) return _cachedFontBase64;
+  try {
+    const res = await fetch(NOTO_TTF_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    _cachedFontBase64 = btoa(binary);
+    return _cachedFontBase64;
+  } catch (e) {
+    console.error("[Noto/report] Font fetch failed:", e);
+    return null;
+  }
+}
+
 export async function generateStampDutyReport(input: ReportInput): Promise<void> {
   const { name, phone, result, district, areaType, gender, surveyNo, lang } = input;
   const isMr = lang === "mr";
@@ -97,7 +117,28 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   const CW  = W - 2 * M;
   let y     = 0;
 
-  const sf = (bold = false) => doc.setFont("helvetica", bold ? "bold" : "normal");
+  /* ── Embed Noto Sans Devanagari ── */
+  const fontBase64 = await loadNotoFont();
+  let notoReady = false;
+  if (fontBase64) {
+    try {
+      doc.addFileToVFS("NotoSansDevanagari-Regular.ttf", fontBase64);
+      doc.addFont("NotoSansDevanagari-Regular.ttf", "NotoSansDevanagari", "normal");
+      notoReady = true;
+    } catch (e) {
+      console.error("[Noto/report] addFont failed:", e);
+    }
+  }
+
+  /* ── Currency formatter — uses ₹ when Noto is ready ── */
+  const fmt = (n: number) =>
+    (notoReady ? "₹" : "Rs. ") + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+  /* ── Font helpers ── */
+  const sf = (bold = false) => {
+    if (isMr && notoReady) doc.setFont("NotoSansDevanagari", "normal");
+    else doc.setFont("helvetica", bold ? "bold" : "normal");
+  };
 
   /* ── Colour helpers ── */
   const fill = (...c: readonly [number, number, number]) => doc.setFillColor(c[0], c[1], c[2]);
@@ -129,7 +170,8 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
     doc.setFontSize(9.5);
     tc(...INK);
     doc.text(label, M + 3, y + 1);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
+    if (notoReady && isMr) doc.setFont("NotoSansDevanagari", "normal");
+    else doc.setFont("helvetica", bold ? "bold" : "normal");
     doc.text(value, W - M - 3, y + 1, { align: "right" });
     y += 7;
   };
@@ -182,13 +224,13 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   );
   y += 7;
 
-  /* ── Marathi language note ── */
-  if (isMr) {
+  /* ── Marathi note (only when Noto unavailable) ── */
+  if (isMr && !notoReady) {
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(120, 80, 80);
     doc.text(
-      "* Report generated in English as Marathi PDF fonts are not supported by your browser.",
+      "* Report generated in English as Marathi PDF font could not be loaded.",
       M, y,
     );
     y += 8;
@@ -249,7 +291,8 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   doc.setFontSize(10);
   doc.text(L.grandTotal.toUpperCase(), M + 5, y + 10);
 
-  doc.setFont("helvetica", "bold");
+  if (notoReady) doc.setFont("NotoSansDevanagari", "normal");
+  else doc.setFont("helvetica", "bold");
   doc.setFontSize(17);
   doc.text(fmt(result.grandTotal), W - M - 5, y + 10.5, { align: "right" });
 
@@ -301,12 +344,12 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   doc.roundedRect(M, y, CW, 18, 2, 2, "FD");
 
   tc(...OXBLOOD_MID);
-  sf(true);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.text(L.upsellTitle, M + 4, y + 7);
 
   tc(80, 50, 30);
-  sf(false);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   const upsellLines = doc.splitTextToSize(L.upsellBody, CW - 8);
   doc.text(upsellLines, M + 4, y + 13);
@@ -321,7 +364,7 @@ export async function generateStampDutyReport(input: ReportInput): Promise<void>
   doc.rect(0, 284, W, 0.8, "F");
 
   tc(...GOLD_MUTED);
-  sf(false);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.text(L.footer, W / 2, 292, { align: "center" });
 
