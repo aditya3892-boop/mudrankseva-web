@@ -297,6 +297,11 @@ export default function RentAgreement() {
             max-height: none !important;
             overflow: visible !important;
           }
+          #agreement-text {
+            font-family: var(--font-geist), var(--font-noto-devanagari), sans-serif !important;
+            font-size: 12pt !important;
+            line-height: 1.7 !important;
+          }
           @page { margin: 2cm; size: A4; }
         }
       `}</style>
@@ -684,7 +689,10 @@ export default function RentAgreement() {
                   </div>
                   <div className="p-6 sm:p-8">
                     <div id="agreement-scroll" className="max-h-[60vh] overflow-y-auto">
-                      <div className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-sans">
+                      <div
+                        id="agreement-text"
+                        className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-agreement"
+                      >
                         {agreement}
                       </div>
                     </div>

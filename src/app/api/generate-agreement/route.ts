@@ -85,14 +85,23 @@ Generate a complete Leave and License Agreement with all of the following number
 15. Dispute resolution (jurisdiction: courts of ${extractCity(f.propertyAddress)})
 16. General covenants and governing law (Maharashtra Rent Control Act, 1999)
 
-Format the document professionally with:
-- A centered title "LEAVE AND LICENSE AGREEMENT"
-- "THIS LEAVE AND LICENSE AGREEMENT is entered into on this..." opening
-- Numbered clauses with clear headings
-- Signature block for Licensor, Licensee, and two witnesses at the end
-- Include "WITNESS WHEREOF" closing clause
+CRITICAL FORMATTING RULES — FOLLOW EXACTLY:
+- Output PLAIN TEXT ONLY. This document will be printed directly; any formatting symbols will appear as literal characters on paper.
+- Do NOT use markdown syntax of any kind: no #, ##, ###, **, *, _, \`, ---, >, or any other markdown markers.
+- Do NOT use HTML tags of any kind: no <div>, <p>, <br>, <strong>, <em>, or any other HTML.
+- Use ALL CAPS for the document title and for each clause heading.
+- Number clauses as: "1. PREAMBLE", "2. DURATION OF LICENSE", etc.
+- For the signature block, use plain underscores for blank lines: ___________________________
+- Separate sections with a single blank line.
 
-Write it formally in English with key financial figures also written in words. The agreement should be ready for printing and notarization.`;
+Format the document with:
+- The title "LEAVE AND LICENSE AGREEMENT" in ALL CAPS on its own line
+- "THIS LEAVE AND LICENSE AGREEMENT is entered into on this..." opening paragraph
+- Numbered clauses with ALL CAPS headings
+- A signature block for Licensor, Licensee, and two witnesses
+- A "IN WITNESS WHEREOF" closing clause
+
+Write formally in English with key financial figures also written in words. The agreement must be ready for printing and notarization.`;
 }
 
 function extractCity(address: string): string {
@@ -117,6 +126,19 @@ function numberToWords(n: number): string {
   }
 
   return convert(n);
+}
+
+function sanitizeAgreement(text: string): string {
+  return text
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/(?<![_])_([^_\n]+)_(?![_])/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/^[-*]{3,}\s*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function POST(request: Request) {
@@ -145,11 +167,12 @@ export async function POST(request: Request) {
       messages: [{ role: "user", content: buildPrompt(formData) }],
     });
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    const clean = sanitizeAgreement(raw);
     const divider = "\n" + "─".repeat(70) + "\n";
 
     return NextResponse.json({
-      agreement: DISCLAIMER + divider + text,
+      agreement: DISCLAIMER + divider + clean,
       disclaimer: DISCLAIMER,
     });
   } catch (err) {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { Noto_Serif_Devanagari } from "next/font/google";
+import { Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 const geist = Geist({
@@ -8,16 +8,39 @@ const geist = Geist({
   subsets: ["latin"],
 });
 
-const notoDevanagari = Noto_Serif_Devanagari({
+const notoDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-devanagari",
   subsets: ["devanagari"],
   weight: ["400", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Mudrankseva — Maharashtra Property Services",
+  metadataBase: new URL("https://mudrankseva.in"),
+  title: {
+    default: "Mudrankseva – Maharashtra Property Legal Services",
+    template: "%s | Mudrankseva",
+  },
   description:
-    "Stamp Duty Calculator, 7/12 OCR Scanner & Property Tax Transfer for Maharashtra. Coming Soon.",
+    "Maharashtra's trusted platform for stamp duty calculator, rent agreements, and property registration. Serving Pune, Mumbai, Nashik and all of Maharashtra.",
+  keywords: [
+    "stamp duty calculator Maharashtra",
+    "rent agreement Pune",
+    "भाडे करार",
+    "मुद्रांक शुल्क",
+    "property registration Maharashtra",
+    "मालमत्ता नोंदणी",
+  ],
+  openGraph: {
+    siteName: "Mudrankseva",
+    locale: "en_IN",
+    type: "website",
+  },
+  alternates: {
+    languages: {
+      "en-IN": "https://mudrankseva.in",
+      "mr-IN": "https://mudrankseva.in",
+    },
+  },
 };
 
 export default function RootLayout({

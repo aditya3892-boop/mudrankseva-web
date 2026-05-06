@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CONTENT, DISTRICTS, type Lang } from "@/lib/content";
+import { generateStampDutyReport, type CalcResult } from "@/lib/generateReport";
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 type AreaType = "corporation" | "council" | "rural";
@@ -13,19 +14,6 @@ type Unit     = "sqmt" | "sqft" | "guntha" | "acre";
 
 type ReportStep = "locked" | "form" | "ready";
 
-interface CalcResult {
-  propValue: number;
-  isFemale: boolean;
-  baseRate: number;
-  baseAmt: number;
-  metroCessAmt: number | null;
-  lbtAmt: number | null;
-  totalDutyRate: number;
-  totalDutyAmt: number;
-  regFeeAmt: number;
-  regFeeCapped: boolean;
-  grandTotal: number;
-}
 
 /* ── Unit conversions (everything → Sq. Meter) ──────────────────────
    1 Guntha   = 101.17 Sq. Mt
@@ -144,6 +132,13 @@ export default function Calculator() {
   const [saving, setSaving]       = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
 
+  /* ── Lead CTA form ── */
+  const [ctaName, setCtaName]           = useState("");
+  const [ctaPhone, setCtaPhone]         = useState("");
+  const [ctaCity, setCtaCity]           = useState("");
+  const [ctaSaving, setCtaSaving]       = useState(false);
+  const [ctaSubmitted, setCtaSubmitted] = useState(false);
+
   /* ── District dropdown click-outside ── */
   const distRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -261,8 +256,47 @@ export default function Calculator() {
     } finally {
       setReportSaving(false);
       setReportStep("ready");
+      try {
+        await generateStampDutyReport({
+          name: reportName,
+          phone: reportPhone,
+          result: result as CalcResult,
+          district: district?.en ?? null,
+          areaType,
+          gender,
+          surveyNo,
+          propValue: (result as CalcResult).propValue,
+          lang,
+        });
+      } catch (pdfErr) {
+        console.error("[PDF]", pdfErr);
+      }
     }
-  }, [result, reportSaving, reportName, reportPhone, district, areaType, surveyNo, gender, unit, valMode]);
+  }, [result, reportSaving, reportName, reportPhone, district, areaType, surveyNo, gender, unit, valMode, lang]);
+
+  /* ── CTA lead capture ── */
+  const handleCtaSubmit = useCallback(async () => {
+    if (!ctaName.trim() || ctaPhone.length !== 10 || !ctaCity || ctaSaving) return;
+    setCtaSaving(true);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: ctaName,
+          phone: ctaPhone,
+          city: ctaCity,
+          source: "calculator",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error("[CTA lead]", err);
+    } finally {
+      setCtaSaving(false);
+      setCtaSubmitted(true);
+    }
+  }, [ctaName, ctaPhone, ctaCity, ctaSaving]);
 
   /* ─────────────────── RENDER ── */
   return (
@@ -525,24 +559,50 @@ export default function Calculator() {
                     {reportStep === "locked" && (
                       <button
                         onClick={() => setReportStep("form")}
-                        className={`w-full mt-1 py-2.5 border border-gold/40 rounded-xl text-sm font-semibold text-gold hover:bg-gold/8 transition-colors ${hFont}`}
+                        className={`w-full mt-2 py-3 rounded-xl bg-oxblood text-gold border-2 border-gold/60 animate-pulse font-bold text-sm flex items-center justify-center gap-2 hover:bg-oxblood-dark hover:animate-none transition-colors ${hFont}`}
                       >
-                        {isMr ? "तपशीलवार अहवाल मिळवा →" : "Get Detailed Breakdown →"}
+                        <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        {isMr ? "तपशीलवार PDF अहवाल — मोफत ↓" : "Download Detailed PDF Report — Free ↓"}
                       </button>
                     )}
 
                     {reportStep === "form" && (
-                      <div className="mt-2 bg-gold/5 rounded-xl border border-gold/25 p-4 space-y-3">
-                        <p className={`text-xs font-semibold text-oxblood ${hFont}`}>
-                          {isMr ? "मोफत अहवाल मिळवा" : "Get Your Free Report"}
-                        </p>
-                        <div className="space-y-2">
+                      <div className="mt-2 rounded-xl border-2 border-gold/40 overflow-hidden">
+                        {/* Oxblood header */}
+                        <div className="bg-oxblood px-4 py-3">
+                          <p className={`text-sm font-bold text-gold ${hFont}`}>
+                            {isMr ? "मोफत PDF अहवाल मिळवा" : "Get Your Free PDF Report"}
+                          </p>
+                          <ul className="mt-2 space-y-1">
+                            {(isMr ? [
+                              "संपूर्ण stamp duty तपशील व दर",
+                              "नोंदणी शुल्क गणना",
+                              "मालमत्तेचा सारांश",
+                              "बचत टिप्स व अधिकृत 2026-27 दर",
+                            ] : [
+                              "Full stamp duty breakdown with rates",
+                              "Registration fee calculation",
+                              "Property details summary",
+                              "Savings tips & official 2026-27 rates",
+                            ]).map((item) => (
+                              <li key={item} className={`text-xs text-gold/70 flex items-center gap-1.5 ${hFont}`}>
+                                <span className="text-gold/50 flex-shrink-0 text-[10px]">✓</span>
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {/* Inputs */}
+                        <div className="p-4 space-y-3 bg-white">
                           <input
                             type="text"
                             value={reportName}
                             onChange={e => setReportName(e.target.value)}
                             placeholder={isMr ? "पूर्ण नाव" : "Full Name"}
-                            className={`w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
+                            className={`w-full px-3 py-2.5 border-2 border-gold/40 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
                           />
                           <input
                             type="tel"
@@ -550,23 +610,30 @@ export default function Calculator() {
                             maxLength={10}
                             value={reportPhone}
                             onChange={e => setReportPhone(e.target.value.replace(/\D/g, ""))}
-                            placeholder={isMr ? "WhatsApp नंबर (10 अंक)" : "WhatsApp Number (10 digits)"}
-                            className="w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm font-sans"
+                            placeholder={isMr ? "मोबाइल नंबर (10 अंक)" : "Mobile Number (10 digits)"}
+                            className="w-full px-3 py-2.5 border-2 border-gold/40 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm font-sans"
                           />
+                          <button
+                            onClick={handleGetReport}
+                            disabled={!reportName.trim() || reportPhone.length !== 10 || reportSaving}
+                            className={`w-full py-2.5 rounded-lg bg-oxblood text-gold border border-gold/40 text-sm font-bold transition-all hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${hFont}`}
+                          >
+                            {reportSaving ? (
+                              <>
+                                <span className="inline-block w-3.5 h-3.5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                                {isMr ? "तयार होत आहे…" : "Generating…"}
+                              </>
+                            ) : (
+                              isMr ? "माझा मोफत PDF पाठवा" : "Generate My Free PDF"
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setReportStep("locked")}
+                            className="w-full text-xs text-ink/35 hover:text-ink/55 transition-colors"
+                          >
+                            Cancel
+                          </button>
                         </div>
-                        <button
-                          onClick={handleGetReport}
-                          disabled={!reportName.trim() || reportPhone.length !== 10 || reportSaving}
-                          className={`w-full py-2.5 rounded-lg bg-oxblood text-gold border border-gold/40 text-sm font-bold transition-all hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed ${hFont}`}
-                        >
-                          {reportSaving ? "…" : isMr ? "माझा मोफत अहवाल पाठवा" : "Send My Free Report"}
-                        </button>
-                        <button
-                          onClick={() => setReportStep("locked")}
-                          className="w-full text-xs text-ink/35 hover:text-ink/55 transition-colors"
-                        >
-                          Cancel
-                        </button>
                       </div>
                     )}
 
@@ -595,36 +662,37 @@ export default function Calculator() {
                           <p className={`text-xs text-ink/35 ${hFont}`}>{cc.disclaimer}</p>
                         </div>
 
-                        {/* Download + WhatsApp */}
+                        {/* Download */}
                         <div className="mt-4 space-y-2">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+                            <span className="text-green-600 flex-shrink-0">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            </span>
+                            <p className={`text-sm font-semibold text-green-700 ${hFont}`}>
+                              {isMr ? "PDF डाउनलोड झाले!" : "PDF downloaded!"}
+                            </p>
+                          </div>
                           <button
-                            onClick={() => window.print()}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-oxblood text-gold border border-gold/40 text-sm font-semibold hover:bg-oxblood-dark transition-colors ${hFont}`}
+                            onClick={() => generateStampDutyReport({
+                              name: reportName,
+                              phone: reportPhone,
+                              result: result as CalcResult,
+                              district: district?.en ?? null,
+                              areaType,
+                              gender,
+                              surveyNo,
+                              propValue: (result as CalcResult).propValue,
+                              lang,
+                            })}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gold/30 text-ink/55 hover:text-oxblood hover:border-gold/50 text-sm font-semibold transition-colors ${hFont}`}
                           >
                             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                               <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
-                            {isMr ? "अहवाल डाउनलोड करा" : "Download Your Report"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const msg = encodeURIComponent(
-                                `माझ्या मालमत्तेचे Stamp Duty:\n` +
-                                `Property Value: ${inr(result.propValue)}\n` +
-                                `Stamp Duty: ${inr(result.totalDutyAmt)} (${pct(result.totalDutyRate)})\n` +
-                                `Registration: ${inr(result.regFeeAmt)}\n` +
-                                `Total Payable: ${inr(result.grandTotal)}\n\n` +
-                                `Calculate yours at mudrankseva.in`
-                              );
-                              window.open(`https://wa.me/?text=${msg}`, "_blank");
-                            }}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe5a] transition-colors ${hFont}`}
-                          >
-                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
-                            </svg>
-                            {isMr ? "WhatsApp वर शेअर करा" : "Share on WhatsApp"}
+                            {isMr ? "पुन्हा डाउनलोड करा" : "Download Again"}
                           </button>
                         </div>
                       </div>
@@ -643,6 +711,93 @@ export default function Calculator() {
                 <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
             </a>
+
+            {/* Lead CTA — shown once a result exists */}
+            {result && (
+              <div className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
+                <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
+                {!ctaSubmitted ? (
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <p className={`text-sm font-bold text-oxblood ${hFont}`}>
+                        {isMr ? "तज्ञांशी बोला — मोफत" : "Get Expert Help — Free"}
+                      </p>
+                      <p className={`text-xs text-ink/45 mt-0.5 ${hFont}`}>
+                        {isMr ? "मालमत्ता नोंदणीसाठी मार्गदर्शन मिळवा" : "Free guidance on property registration"}
+                      </p>
+                    </div>
+                    <div className="space-y-2.5">
+                      <input
+                        type="text"
+                        value={ctaName}
+                        onChange={e => setCtaName(e.target.value)}
+                        placeholder={isMr ? "पूर्ण नाव" : "Full Name"}
+                        className={`w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm ${hFont}`}
+                      />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        value={ctaPhone}
+                        onChange={e => setCtaPhone(e.target.value.replace(/\D/g, ""))}
+                        placeholder={isMr ? "मोबाइल नंबर (10 अंक)" : "Mobile Number (10 digits)"}
+                        className="w-full px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-ink placeholder:text-ink/30 text-sm font-sans"
+                      />
+                      <div className="relative">
+                        <select
+                          value={ctaCity}
+                          onChange={e => setCtaCity(e.target.value)}
+                          className={`w-full appearance-none px-3 py-2.5 border border-gold/30 focus:border-gold focus:outline-none rounded-lg bg-white text-sm pr-8 cursor-pointer ${ctaCity ? "text-ink" : "text-ink/30"} ${hFont}`}
+                        >
+                          <option value="" disabled>{isMr ? "शहर निवडा" : "Select City"}</option>
+                          <option value="Pune">{isMr ? "पुणे" : "Pune"}</option>
+                          <option value="Mumbai">{isMr ? "मुंबई" : "Mumbai"}</option>
+                          <option value="Nashik">{isMr ? "नाशिक" : "Nashik"}</option>
+                          <option value="Other">{isMr ? "इतर" : "Other"}</option>
+                        </select>
+                        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/35">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCtaSubmit}
+                      disabled={!ctaName.trim() || ctaPhone.length !== 10 || !ctaCity || ctaSaving}
+                      className={`w-full py-2.5 rounded-lg bg-oxblood text-gold border border-gold/40 text-sm font-bold transition-all hover:bg-oxblood-dark disabled:opacity-40 disabled:cursor-not-allowed ${hFont}`}
+                    >
+                      {ctaSaving ? "…" : isMr ? "तज्ञांशी बोला" : "Talk to an Expert"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600 flex-shrink-0">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </span>
+                      <p className={`text-sm font-semibold text-ink ${hFont}`}>
+                        {isMr ? "धन्यवाद! आम्ही लवकरच संपर्क साधू" : "Thanks! We'll be in touch soon."}
+                      </p>
+                    </div>
+                    <a
+                      href={`https://wa.me/917755984622?text=${encodeURIComponent("Hi, I used the stamp duty calculator on Mudrankseva")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center justify-center gap-2.5 w-full py-3 rounded-xl bg-[#25D366] text-white font-bold text-sm transition-all hover:bg-[#1ebe5b] ${hFont}`}
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                      {isMr ? "WhatsApp वर बोला" : "Chat on WhatsApp"}
+                    </a>
+                    <p className={`text-xs text-ink/35 text-center ${hFont}`}>
+                      {isMr ? "किंवा आम्ही तुम्हाला कॉल करू" : "or we'll call you back"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>

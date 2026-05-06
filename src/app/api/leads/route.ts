@@ -1,28 +1,31 @@
-import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+﻿import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  const body = await req.json();
+const WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL ?? "";
 
-  // Always log — works in all environments
-  console.log("[Lead captured]", JSON.stringify(body));
-
-  // Write to leads.json (works locally; skipped on read-only Vercel FS)
+export async function POST(req: NextRequest) {
   try {
-    const filePath = path.join(process.cwd(), "leads.json");
-    let leads: unknown[] = [];
-    try {
-      const raw = await fs.readFile(filePath, "utf-8");
-      leads = JSON.parse(raw);
-    } catch {
-      // File doesn't exist yet — start fresh
-    }
-    leads.push({ ...body, ts: new Date().toISOString() });
-    await fs.writeFile(filePath, JSON.stringify(leads, null, 2), "utf-8");
-  } catch {
-    // Silently skip on read-only filesystems (production)
-  }
+    const body = await req.json();
+    console.log("[Lead captured]", JSON.stringify({ ...body, ts: new Date().toISOString() }));
 
-  return NextResponse.json({ ok: true });
+    if (!WEBHOOK_URL) {
+      console.warn("[Lead] GOOGLE_SHEET_WEBHOOK_URL not set — lead logged to console only");
+      return NextResponse.json({ ok: true, saved: false, reason: "no webhook configured" });
+    }
+
+    const sheetRes = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!sheetRes.ok) {
+      console.error("[Lead] Sheet webhook returned", sheetRes.status);
+      return NextResponse.json({ ok: true, saved: false, reason: "webhook error" });
+    }
+
+    return NextResponse.json({ ok: true, saved: true });
+  } catch (err) {
+    console.error("[Lead] Error:", err);
+    return NextResponse.json({ ok: true, saved: false, reason: "exception" });
+  }
 }
