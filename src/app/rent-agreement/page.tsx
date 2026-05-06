@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { type Lang } from "@/lib/content";
+import { generateAgreementPdf } from "@/lib/generateAgreementPdf";
 
 /* ── Razorpay global types ──────────────────────────────────────────── */
 declare global {
@@ -12,12 +13,8 @@ declare global {
   }
 }
 interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
+  key: string; amount: number; currency: string;
+  name: string; description: string; order_id: string;
   handler(r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }): void;
   prefill?: { name?: string };
   theme?: { color?: string };
@@ -25,68 +22,137 @@ interface RazorpayOptions {
 }
 
 /* ── Types ──────────────────────────────────────────────────────────── */
-type Step = "form" | "generating" | "done";
+type Step  = "form" | "generating" | "done";
 type Payer = "Landlord" | "Tenant" | "Split equally";
 
 interface FormFields {
-  landlordName: string;
-  landlordAddress: string;
-  landlordAadhaar: string;
-  tenantName: string;
-  tenantAddress: string;
-  tenantAadhaar: string;
-  propertyAddress: string;
-  propertyType: string;
-  furnishedStatus: string;
-  monthlyRent: string;
-  securityDeposit: string;
-  startDate: string;
-  duration: string;
-  lockInPeriod: string;
-  maintenancePaidBy: Payer;
-  electricityPaidBy: Payer;
-  waterPaidBy: Payer;
+  landlordName: string; landlordAddress: string; landlordAadhaar: string;
+  tenantName: string;   tenantAddress: string;   tenantAadhaar: string;
+  propertyAddress: string; propertyType: string; furnishedStatus: string;
+  monthlyRent: string; securityDeposit: string; startDate: string;
+  duration: string; lockInPeriod: string;
+  maintenancePaidBy: Payer; electricityPaidBy: Payer; waterPaidBy: Payer;
 }
 
 const INITIAL: FormFields = {
-  landlordName: "",
-  landlordAddress: "",
-  landlordAadhaar: "",
-  tenantName: "",
-  tenantAddress: "",
-  tenantAadhaar: "",
-  propertyAddress: "",
-  propertyType: "2BHK",
-  furnishedStatus: "Semi-Furnished",
-  monthlyRent: "",
-  securityDeposit: "",
-  startDate: "",
-  duration: "11",
-  lockInPeriod: "0",
-  maintenancePaidBy: "Tenant",
-  electricityPaidBy: "Tenant",
-  waterPaidBy: "Tenant",
+  landlordName: "", landlordAddress: "", landlordAadhaar: "",
+  tenantName: "",   tenantAddress: "",   tenantAadhaar: "",
+  propertyAddress: "", propertyType: "2BHK", furnishedStatus: "Semi-Furnished",
+  monthlyRent: "", securityDeposit: "", startDate: "",
+  duration: "11", lockInPeriod: "0",
+  maintenancePaidBy: "Tenant", electricityPaidBy: "Tenant", waterPaidBy: "Tenant",
 };
 
 const PAYERS: Payer[] = ["Landlord", "Tenant", "Split equally"];
 const PAYER_MR: Record<Payer, string> = {
-  Landlord: "मालक",
-  Tenant: "भाडेकरू",
-  "Split equally": "समान वाटप",
+  Landlord: "मालक", Tenant: "भाडेकरू", "Split equally": "समान वाटप",
 };
 
-/* ── Helpers ────────────────────────────────────────────────────────── */
+/* ── Bilingual content ──────────────────────────────────────────────── */
+const RA = {
+  en: {
+    back: "← Back", badge: "Maharashtra",
+    h1: "Rent Agreement Generator",
+    subtitle: "Maharashtra Leave & License Agreement — ₹299",
+    landlordSec: "Landlord Details",          landlordSub: "मालकाची माहिती",
+    tenantSec: "Tenant Details",              tenantSub: "भाडेकरूची माहिती",
+    propertySec: "Property Details",          propertySub: "मालमत्तेची माहिती",
+    financialSec: "Financial Terms",          financialSub: "आर्थिक अटी",
+    termsSec: "Agreement Terms",              termsSub: "करार अटी",
+    utilitiesSec: "Utility Responsibilities", utilitiesSub: "देखभाल जबाबदारी",
+    fullName: "Full Name",           fullNameSub: "पूर्ण नाव",           fullNamePh: "e.g. Ramesh Shankar Patil",
+    address: "Address",              addressSub: "पत्ता",                 addressPh: "Full residential address",
+    permAddr: "Permanent Address",   permAddrSub: "कायमचा पत्ता",        permAddrPh: "Full permanent address",
+    aadhaar: "Aadhaar Number",       aadhaarSub: "आधार क्रमांक",          aadhaarPh: "12-digit Aadhaar",
+    propAddr: "Property Address",    propAddrSub: "मालमत्तेचा पत्ता",    propAddrPh: "Full address of the rented property",
+    propType: "Property Type",       propTypeSub: "मालमत्तेचा प्रकार",
+    furnished: "Furnished Status",   furnishedSub: "फर्निशिंग",
+    furnishedOpt: (s: string) => s,
+    rentLabel: "Monthly Rent (₹)",   rentSub: "मासिक भाडे",               rentPh: "15000",
+    deposit: "Security Deposit (₹)", depositSub: "सिक्युरिटी ठेव",       depositPh: "30000",
+    startDate: "Agreement Start Date", startDateSub: "प्रारंभ तारीख",
+    duration: "Duration (months)",   durationSub: "कालावधी (महिने)",
+    durationOpt: (d: string) => `${d} months`,
+    lockIn: "Lock-in Period (months)", lockInSub: "लॉक-इन कालावधी",
+    lockInOpt: (m: string) => m === "0" ? "No lock-in" : `${m} month${m === "1" ? "" : "s"}`,
+    maintenance: "Maintenance Charges", maintenanceSub: "देखरेखीचा खर्च",
+    electricity: "Electricity Bill",    electricitySub: "वीज बिल",
+    water: "Water Bill",                waterSub: "पाण्याचे बिल",
+    optional: "optional",
+    ctaTitle: "Ready to generate?",
+    ctaOnetime: "one-time",
+    ctaTags: ["5 min mein ready", "Maharashtra format", "Print-ready PDF"],
+    ctaBtn: "Pay ₹299 and Generate Agreement",
+    ctaPaying: "Opening payment…",
+    ctaWarn: "Fill all required fields to continue",
+    genTitle: "Generating your agreement…",
+    genSub: "तुमचा करार तयार होत आहे, कृपया थांबा",
+    genNote: "This usually takes 20–40 seconds",
+    dlBtn: "Download PDF",
+    anotherBtn: "Generate Another",
+    docTitle: "Agreement Document",
+    docHint: "Scroll to read · Print to save",
+    trust: "Secure payment via Razorpay · Your data is not stored · 10,000+ agreements generated",
+  },
+  mr: {
+    back: "← मागे", badge: "महाराष्ट्र",
+    h1: "भाडेकरार जनरेटर",
+    subtitle: "महाराष्ट्र Leave & License करार — ₹२९९",
+    landlordSec: "मालकाची माहिती",    landlordSub: "Landlord Details",
+    tenantSec: "भाडेकरूची माहिती",   tenantSub: "Tenant Details",
+    propertySec: "मालमत्तेची माहिती", propertySub: "Property Details",
+    financialSec: "आर्थिक अटी",       financialSub: "Financial Terms",
+    termsSec: "करार अटी",             termsSub: "Agreement Terms",
+    utilitiesSec: "देखभाल जबाबदारी", utilitiesSub: "Utility Responsibilities",
+    fullName: "पूर्ण नाव",            fullNameSub: "Full Name",          fullNamePh: "उदा. रमेश शंकर पाटील",
+    address: "पत्ता",                 addressSub: "Address",             addressPh: "पूर्ण निवासी पत्ता",
+    permAddr: "कायमचा पत्ता",         permAddrSub: "Permanent Address",  permAddrPh: "पूर्ण कायमचा पत्ता",
+    aadhaar: "आधार क्रमांक",          aadhaarSub: "Aadhaar Number",      aadhaarPh: "12 अंकी आधार",
+    propAddr: "मालमत्तेचा पत्ता",    propAddrSub: "Property Address",   propAddrPh: "भाड्याच्या मालमत्तेचा पूर्ण पत्ता",
+    propType: "मालमत्तेचा प्रकार",    propTypeSub: "Property Type",
+    furnished: "फर्निशिंग",            furnishedSub: "Furnished Status",
+    furnishedOpt: (s: string) =>
+      ({"Fully Furnished": "पूर्ण फर्निश", "Semi-Furnished": "अर्ध फर्निश", "Unfurnished": "फर्निश नाही"} as Record<string, string>)[s] ?? s,
+    rentLabel: "मासिक भाडे (₹)",     rentSub: "Monthly Rent",          rentPh: "15000",
+    deposit: "सिक्युरिटी ठेव (₹)",   depositSub: "Security Deposit",   depositPh: "30000",
+    startDate: "प्रारंभ तारीख",       startDateSub: "Agreement Start Date",
+    duration: "कालावधी (महिने)",      durationSub: "Duration (months)",
+    durationOpt: (d: string) => `${d} महिने`,
+    lockIn: "लॉक-इन कालावधी",         lockInSub: "Lock-in Period (months)",
+    lockInOpt: (m: string) => m === "0" ? "लॉक-इन नाही" : (m === "1" ? "1 महिना" : `${m} महिने`),
+    maintenance: "देखरेखीचा खर्च",    maintenanceSub: "Maintenance Charges",
+    electricity: "वीज बिल",            electricitySub: "Electricity Bill",
+    water: "पाण्याचे बिल",             waterSub: "Water Bill",
+    optional: "ऐच्छिक",
+    ctaTitle: "तयार आहात?",
+    ctaOnetime: "एकवेळ",
+    ctaTags: ["5 मिनिटात तयार", "महाराष्ट्र फॉर्मॅट", "प्रिंट-रेडी PDF"],
+    ctaBtn: "₹299 भरा आणि करार मिळवा",
+    ctaPaying: "पेमेंट उघडत आहे…",
+    ctaWarn: "पुढे जाण्यासाठी सर्व आवश्यक माहिती भरा",
+    genTitle: "तुमचा करार तयार होत आहे…",
+    genSub: "कृपया थांबा",
+    genNote: "साधारणपणे 20–40 सेकंद लागतात",
+    dlBtn: "PDF डाउनलोड करा",
+    anotherBtn: "नवीन करार तयार करा",
+    docTitle: "करार दस्तऐवज",
+    docHint: "वाचण्यासाठी स्क्रोल करा",
+    trust: "Razorpay द्वारे सुरक्षित पेमेंट · डेटा साठवला जात नाही",
+  },
+};
+
+/* ── Helper components ──────────────────────────────────────────────── */
 function Field({
-  label, mr, children, optional,
+  label, sub, children, optional, isMr = false,
 }: {
-  label: string; mr: string; children: React.ReactNode; optional?: boolean;
+  label: string; sub: string; children: React.ReactNode; optional?: boolean; isMr?: boolean;
 }) {
   return (
     <div>
       <label className="block mb-2">
-        <span className="text-sm font-semibold text-oxblood font-sans tracking-tight">{label}</span>
-        {optional && <span className="ml-1.5 text-xs text-ink/30 font-sans">(optional)</span>}
-        <span className="block text-[11px] text-ink/30 font-devanagari mt-0.5">{mr}</span>
+        <span className={`text-sm font-semibold text-oxblood tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>{label}</span>
+        {optional && <span className="ml-1.5 text-xs text-ink/30 font-sans">({isMr ? "ऐच्छिक" : "optional"})</span>}
+        <span className={`block text-[11px] text-ink/30 mt-0.5 ${isMr ? "font-sans" : "font-devanagari"}`}>{sub}</span>
       </label>
       {children}
     </div>
@@ -94,16 +160,16 @@ function Field({
 }
 
 function SectionCard({
-  title, mr, children,
+  title, sub, children, isMr = false,
 }: {
-  title: string; mr: string; children: React.ReactNode;
+  title: string; sub: string; children: React.ReactNode; isMr?: boolean;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
       <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
       <div className="px-6 py-4 border-b border-gold/10 flex items-center gap-2.5">
-        <span className="font-semibold text-oxblood text-sm font-sans tracking-tight">{title}</span>
-        <span className="text-ink/25 text-xs font-devanagari">{mr}</span>
+        <span className={`font-semibold text-oxblood text-sm tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>{title}</span>
+        <span className={`text-ink/25 text-xs ${isMr ? "font-sans" : "font-devanagari"}`}>{sub}</span>
       </div>
       <div className="p-6 space-y-5">{children}</div>
     </div>
@@ -129,9 +195,9 @@ function ChevronDown() {
 }
 
 function PayerToggle({
-  value, onChange,
+  value, onChange, isMr = false,
 }: {
-  value: Payer; onChange(v: Payer): void;
+  value: Payer; onChange(v: Payer): void; isMr?: boolean;
 }) {
   return (
     <div className="flex rounded-xl border border-gold/20 overflow-hidden text-xs font-semibold">
@@ -142,8 +208,8 @@ function PayerToggle({
           onClick={() => onChange(p)}
           className={`flex-1 py-2.5 transition-colors flex flex-col items-center gap-0.5 ${i > 0 ? "border-l border-gold/25" : ""} ${value === p ? "bg-oxblood text-gold" : "bg-white text-ink/55 hover:text-ink"}`}
         >
-          <span className="font-sans">{p}</span>
-          <span className="font-devanagari text-[10px] opacity-70">{PAYER_MR[p]}</span>
+          <span className={isMr ? "font-devanagari" : "font-sans"}>{isMr ? PAYER_MR[p] : p}</span>
+          <span className={`text-[10px] opacity-70 ${isMr ? "font-sans" : "font-devanagari"}`}>{isMr ? p : PAYER_MR[p]}</span>
         </button>
       ))}
     </div>
@@ -154,15 +220,15 @@ function PayerToggle({
 export default function RentAgreement() {
   const [lang, setLang] = useState<Lang>("en");
   const isMr = lang === "mr";
+  const c = RA[lang];
 
-  const [step, setStep] = useState<Step>("form");
-  const [form, setForm] = useState<FormFields>(INITIAL);
+  const [step, setStep]           = useState<Step>("form");
+  const [form, setForm]           = useState<FormFields>(INITIAL);
   const [agreement, setAgreement] = useState("");
   const [disclaimer, setDisclaimer] = useState("");
-  const [error, setError] = useState("");
-  const [paying, setPaying] = useState(false);
+  const [error, setError]         = useState("");
+  const [paying, setPaying]       = useState(false);
 
-  /* Load Razorpay checkout script once */
   useEffect(() => {
     const s = document.createElement("script");
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -171,7 +237,6 @@ export default function RentAgreement() {
     return () => { document.body.removeChild(s); };
   }, []);
 
-  /* Set today as default start date */
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setForm(prev => ({ ...prev, startDate: today }));
@@ -183,15 +248,23 @@ export default function RentAgreement() {
 
   const isValid = useCallback(() =>
     Boolean(
-      form.landlordName.trim() &&
-      form.landlordAddress.trim() &&
-      form.tenantName.trim() &&
-      form.tenantAddress.trim() &&
-      form.propertyAddress.trim() &&
-      form.monthlyRent &&
-      form.securityDeposit &&
-      form.startDate
+      form.landlordName.trim() && form.landlordAddress.trim() &&
+      form.tenantName.trim()   && form.tenantAddress.trim() &&
+      form.propertyAddress.trim() && form.monthlyRent &&
+      form.securityDeposit && form.startDate
     ), [form]);
+
+  const triggerPdf = useCallback((agreementText: string, currentLang: string, currentForm: FormFields) => {
+    generateAgreementPdf({
+      agreement: agreementText,
+      lang: currentLang,
+      landlordName: currentForm.landlordName,
+      tenantName: currentForm.tenantName,
+      propertyAddress: currentForm.propertyAddress,
+      rent: currentForm.monthlyRent,
+      startDate: currentForm.startDate,
+    });
+  }, []);
 
   const handlePayAndGenerate = useCallback(async () => {
     if (!isValid() || paying) return;
@@ -206,22 +279,20 @@ export default function RentAgreement() {
       const { orderId, amount, currency, keyId } = orderJson as Required<typeof orderJson>;
 
       const rzp = new window.Razorpay({
-        key: keyId,
-        amount,
-        currency,
+        key: keyId, amount, currency,
         name: "Mudrankseva",
         description: "Maharashtra Rent Agreement",
         order_id: orderId,
         handler: async (response) => {
           setPaying(false);
           setStep("generating");
-
           try {
             const genRes = await fetch("/api/generate-agreement", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 formData: form,
+                lang,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
@@ -229,10 +300,11 @@ export default function RentAgreement() {
             });
             const genJson = await genRes.json() as { agreement?: string; disclaimer?: string; error?: string };
             if (!genRes.ok) throw new Error(genJson.error ?? "Generation failed");
-
-            setAgreement(genJson.agreement ?? "");
+            const text = genJson.agreement ?? "";
+            setAgreement(text);
             setDisclaimer(genJson.disclaimer ?? "");
             setStep("done");
+            triggerPdf(text, lang, form);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to generate agreement. Please contact support.");
             setStep("form");
@@ -248,7 +320,7 @@ export default function RentAgreement() {
       setPaying(false);
       setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
     }
-  }, [form, isValid, paying]);
+  }, [form, lang, isValid, paying, triggerPdf]);
 
   const handleTestGenerate = useCallback(async () => {
     if (!isValid()) return;
@@ -260,6 +332,7 @@ export default function RentAgreement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           formData: form,
+          lang,
           razorpayOrderId: "order_test",
           razorpayPaymentId: "test_123",
           razorpaySignature: "test_sig",
@@ -267,41 +340,33 @@ export default function RentAgreement() {
       });
       const genJson = await genRes.json() as { agreement?: string; disclaimer?: string; error?: string };
       if (!genRes.ok) throw new Error(genJson.error ?? "Generation failed");
-      setAgreement(genJson.agreement ?? "");
+      const text = genJson.agreement ?? "";
+      setAgreement(text);
       setDisclaimer(genJson.disclaimer ?? "");
       setStep("done");
+      triggerPdf(text, lang, form);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
       setStep("form");
     }
-  }, [form, isValid]);
+  }, [form, lang, isValid, triggerPdf]);
 
-  const handleDownloadPDF = () => window.print();
+  const handleDownloadPdf = useCallback(() => {
+    if (!agreement) return;
+    triggerPdf(agreement, lang, form);
+  }, [agreement, lang, form, triggerPdf]);
 
   const year = new Date().getFullYear();
 
-  /* ── Render ── */
   return (
     <>
-      {/* Print-specific styles */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
-          #agreement-print-area {
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-          }
-          #agreement-scroll {
-            max-height: none !important;
-            overflow: visible !important;
-          }
-          #agreement-text {
-            font-family: var(--font-geist), var(--font-noto-devanagari), sans-serif !important;
-            font-size: 12pt !important;
-            line-height: 1.7 !important;
-          }
+          #agreement-print-area { border: none !important; box-shadow: none !important; border-radius: 0 !important; }
+          #agreement-scroll { max-height: none !important; overflow: visible !important; }
+          #agreement-text { font-family: var(--font-geist), var(--font-noto-devanagari), sans-serif !important; font-size: 12pt !important; line-height: 1.7 !important; }
           @page { margin: 2cm; size: A4; }
         }
       `}</style>
@@ -315,22 +380,12 @@ export default function RentAgreement() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex items-center rounded-full border border-gold/50 overflow-hidden text-xs font-semibold">
-              <button
-                onClick={() => setLang("en")}
-                className={`px-3.5 py-1.5 transition-colors ${lang === "en" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
-              >
-                EN
-              </button>
+              <button onClick={() => setLang("en")} className={`px-3.5 py-1.5 transition-colors ${lang === "en" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}>EN</button>
               <span className="w-px h-4 bg-gold/30" />
-              <button
-                onClick={() => setLang("mr")}
-                className={`px-3.5 py-1.5 font-devanagari transition-colors ${lang === "mr" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
-              >
-                मराठी
-              </button>
+              <button onClick={() => setLang("mr")} className={`px-3.5 py-1.5 font-devanagari transition-colors ${lang === "mr" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}>मराठी</button>
             </div>
             <span className={`hidden sm:inline text-xs text-gold/80 border border-gold/40 rounded-full px-3 py-1 tracking-widest uppercase ${isMr ? "font-devanagari tracking-normal" : ""}`}>
-              {isMr ? "महाराष्ट्र" : "Maharashtra"}
+              {c.badge}
             </span>
           </div>
         </header>
@@ -339,13 +394,13 @@ export default function RentAgreement() {
         <div className="no-print border-b border-gold/10 px-6 py-8">
           <div className="max-w-3xl mx-auto">
             <Link href="/" className="text-[11px] text-ink/30 hover:text-oxblood transition-colors mb-4 inline-block uppercase tracking-widest font-sans">
-              {isMr ? "← मुख्यपृष्ठ" : "← Back"}
+              {c.back}
             </Link>
             <h1 className={`text-3xl sm:text-4xl font-bold text-oxblood tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>
-              {isMr ? "भाडेकरार जनरेटर" : "Rent Agreement Generator"}
+              {c.h1}
             </h1>
-            <p className="text-ink/40 text-sm mt-2 font-sans">
-              {isMr ? "महाराष्ट्र Leave and License Agreement — ₹२९९" : "Maharashtra Leave & License Agreement — ₹299"}
+            <p className={`text-ink/40 text-sm mt-2 ${isMr ? "font-devanagari" : "font-sans"}`}>
+              {c.subtitle}
             </p>
           </div>
         </div>
@@ -359,90 +414,59 @@ export default function RentAgreement() {
               <div className="space-y-6">
 
                 {/* Landlord */}
-                <SectionCard title="Landlord Details" mr="मालकाची माहिती">
-                  <Field label="Full Name" mr="पूर्ण नाव">
-                    <input
-                      type="text"
-                      value={form.landlordName}
+                <SectionCard title={c.landlordSec} sub={c.landlordSub} isMr={isMr}>
+                  <Field label={c.fullName} sub={c.fullNameSub} isMr={isMr}>
+                    <input type="text" value={form.landlordName}
                       onChange={e => set("landlordName", e.target.value)}
-                      placeholder="e.g. Ramesh Shankar Patil"
-                      className={InputStyle()}
-                    />
+                      placeholder={c.fullNamePh} className={InputStyle()} />
                   </Field>
-                  <Field label="Address" mr="पत्ता">
-                    <textarea
-                      value={form.landlordAddress}
+                  <Field label={c.address} sub={c.addressSub} isMr={isMr}>
+                    <textarea value={form.landlordAddress}
                       onChange={e => set("landlordAddress", e.target.value)}
-                      placeholder="Full residential address"
-                      rows={2}
-                      className={InputStyle("resize-none")}
-                    />
+                      placeholder={c.addressPh} rows={2} className={InputStyle("resize-none")} />
                   </Field>
-                  <Field label="Aadhaar Number" mr="आधार क्रमांक" optional>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={12}
+                  <Field label={c.aadhaar} sub={c.aadhaarSub} isMr={isMr} optional>
+                    <input type="text" inputMode="numeric" maxLength={12}
                       value={form.landlordAadhaar}
                       onChange={e => set("landlordAadhaar", e.target.value.replace(/\D/g, ""))}
-                      placeholder="12-digit Aadhaar"
-                      className={InputStyle()}
-                    />
+                      placeholder={c.aadhaarPh} className={InputStyle()} />
                   </Field>
                 </SectionCard>
 
                 {/* Tenant */}
-                <SectionCard title="Tenant Details" mr="भाडेकरूची माहिती">
-                  <Field label="Full Name" mr="पूर्ण नाव">
-                    <input
-                      type="text"
-                      value={form.tenantName}
+                <SectionCard title={c.tenantSec} sub={c.tenantSub} isMr={isMr}>
+                  <Field label={c.fullName} sub={c.fullNameSub} isMr={isMr}>
+                    <input type="text" value={form.tenantName}
                       onChange={e => set("tenantName", e.target.value)}
-                      placeholder="e.g. Suresh Kumar Sharma"
-                      className={InputStyle()}
-                    />
+                      placeholder={isMr ? "उदा. सुरेश कुमार शर्मा" : "e.g. Suresh Kumar Sharma"}
+                      className={InputStyle()} />
                   </Field>
-                  <Field label="Permanent Address" mr="कायमचा पत्ता">
-                    <textarea
-                      value={form.tenantAddress}
+                  <Field label={c.permAddr} sub={c.permAddrSub} isMr={isMr}>
+                    <textarea value={form.tenantAddress}
                       onChange={e => set("tenantAddress", e.target.value)}
-                      placeholder="Full permanent address"
-                      rows={2}
-                      className={InputStyle("resize-none")}
-                    />
+                      placeholder={c.permAddrPh} rows={2} className={InputStyle("resize-none")} />
                   </Field>
-                  <Field label="Aadhaar Number" mr="आधार क्रमांक" optional>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={12}
+                  <Field label={c.aadhaar} sub={c.aadhaarSub} isMr={isMr} optional>
+                    <input type="text" inputMode="numeric" maxLength={12}
                       value={form.tenantAadhaar}
                       onChange={e => set("tenantAadhaar", e.target.value.replace(/\D/g, ""))}
-                      placeholder="12-digit Aadhaar"
-                      className={InputStyle()}
-                    />
+                      placeholder={c.aadhaarPh} className={InputStyle()} />
                   </Field>
                 </SectionCard>
 
                 {/* Property */}
-                <SectionCard title="Property Details" mr="मालमत्तेची माहिती">
-                  <Field label="Property Address" mr="मालमत्तेचा पत्ता">
-                    <textarea
-                      value={form.propertyAddress}
+                <SectionCard title={c.propertySec} sub={c.propertySub} isMr={isMr}>
+                  <Field label={c.propAddr} sub={c.propAddrSub} isMr={isMr}>
+                    <textarea value={form.propertyAddress}
                       onChange={e => set("propertyAddress", e.target.value)}
-                      placeholder="Full address of the rented property"
-                      rows={2}
-                      className={InputStyle("resize-none")}
-                    />
+                      placeholder={c.propAddrPh} rows={2} className={InputStyle("resize-none")} />
                   </Field>
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="Property Type" mr="मालमत्तेचा प्रकार">
+                    <Field label={c.propType} sub={c.propTypeSub} isMr={isMr}>
                       <div className="relative">
-                        <select
-                          value={form.propertyType}
+                        <select value={form.propertyType}
                           onChange={e => set("propertyType", e.target.value)}
-                          className={SelectStyle()}
-                        >
+                          className={SelectStyle()}>
                           {["1BHK", "2BHK", "3BHK", "3BHK+", "Commercial"].map(t => (
                             <option key={t} value={t}>{t}</option>
                           ))}
@@ -450,15 +474,13 @@ export default function RentAgreement() {
                         <ChevronDown />
                       </div>
                     </Field>
-                    <Field label="Furnished Status" mr="फर्निशिंग">
+                    <Field label={c.furnished} sub={c.furnishedSub} isMr={isMr}>
                       <div className="relative">
-                        <select
-                          value={form.furnishedStatus}
+                        <select value={form.furnishedStatus}
                           onChange={e => set("furnishedStatus", e.target.value)}
-                          className={SelectStyle()}
-                        >
+                          className={SelectStyle()}>
                           {["Fully Furnished", "Semi-Furnished", "Unfurnished"].map(s => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>{c.furnishedOpt(s)}</option>
                           ))}
                         </select>
                         <ChevronDown />
@@ -468,71 +490,54 @@ export default function RentAgreement() {
                 </SectionCard>
 
                 {/* Financial */}
-                <SectionCard title="Financial Terms" mr="आर्थिक अटी">
+                <SectionCard title={c.financialSec} sub={c.financialSub} isMr={isMr}>
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="Monthly Rent (₹)" mr="मासिक भाडे">
+                    <Field label={c.rentLabel} sub={c.rentSub} isMr={isMr}>
                       <div className="relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={form.monthlyRent}
+                        <input type="text" inputMode="numeric" value={form.monthlyRent}
                           onChange={e => set("monthlyRent", e.target.value.replace(/\D/g, ""))}
-                          placeholder="15000"
-                          className={InputStyle("pl-8")}
-                        />
+                          placeholder={c.rentPh} className={InputStyle("pl-8")} />
                       </div>
                     </Field>
-                    <Field label="Security Deposit (₹)" mr="सिक्युरिटी ठेव">
+                    <Field label={c.deposit} sub={c.depositSub} isMr={isMr}>
                       <div className="relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-oxblood font-bold text-sm select-none">₹</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={form.securityDeposit}
+                        <input type="text" inputMode="numeric" value={form.securityDeposit}
                           onChange={e => set("securityDeposit", e.target.value.replace(/\D/g, ""))}
-                          placeholder="30000"
-                          className={InputStyle("pl-8")}
-                        />
+                          placeholder={c.depositPh} className={InputStyle("pl-8")} />
                       </div>
                     </Field>
                   </div>
                 </SectionCard>
 
                 {/* Agreement Terms */}
-                <SectionCard title="Agreement Terms" mr="करार अटी">
-                  <Field label="Agreement Start Date" mr="प्रारंभ तारीख">
-                    <input
-                      type="date"
-                      value={form.startDate}
+                <SectionCard title={c.termsSec} sub={c.termsSub} isMr={isMr}>
+                  <Field label={c.startDate} sub={c.startDateSub} isMr={isMr}>
+                    <input type="date" value={form.startDate}
                       onChange={e => set("startDate", e.target.value)}
-                      className={InputStyle()}
-                    />
+                      className={InputStyle()} />
                   </Field>
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="Duration (months)" mr="कालावधी (महिने)">
+                    <Field label={c.duration} sub={c.durationSub} isMr={isMr}>
                       <div className="relative">
-                        <select
-                          value={form.duration}
+                        <select value={form.duration}
                           onChange={e => set("duration", e.target.value)}
-                          className={SelectStyle()}
-                        >
+                          className={SelectStyle()}>
                           {["6", "11", "12", "24", "36"].map(d => (
-                            <option key={d} value={d}>{d} months</option>
+                            <option key={d} value={d}>{c.durationOpt(d)}</option>
                           ))}
                         </select>
                         <ChevronDown />
                       </div>
                     </Field>
-                    <Field label="Lock-in Period (months)" mr="लॉक-इन कालावधी">
+                    <Field label={c.lockIn} sub={c.lockInSub} isMr={isMr}>
                       <div className="relative">
-                        <select
-                          value={form.lockInPeriod}
+                        <select value={form.lockInPeriod}
                           onChange={e => set("lockInPeriod", e.target.value)}
-                          className={SelectStyle()}
-                        >
+                          className={SelectStyle()}>
                           {["0", "1", "2", "3", "6"].map(m => (
-                            <option key={m} value={m}>{m === "0" ? "No lock-in" : `${m} month${m === "1" ? "" : "s"}`}</option>
+                            <option key={m} value={m}>{c.lockInOpt(m)}</option>
                           ))}
                         </select>
                         <ChevronDown />
@@ -542,15 +547,15 @@ export default function RentAgreement() {
                 </SectionCard>
 
                 {/* Utilities */}
-                <SectionCard title="Utility Responsibilities" mr="देखभाल जबाबदारी">
-                  <Field label="Maintenance Charges" mr="देखरेखीचा खर्च">
-                    <PayerToggle value={form.maintenancePaidBy} onChange={v => set("maintenancePaidBy", v)} />
+                <SectionCard title={c.utilitiesSec} sub={c.utilitiesSub} isMr={isMr}>
+                  <Field label={c.maintenance} sub={c.maintenanceSub} isMr={isMr}>
+                    <PayerToggle value={form.maintenancePaidBy} onChange={v => set("maintenancePaidBy", v)} isMr={isMr} />
                   </Field>
-                  <Field label="Electricity Bill" mr="वीज बिल">
-                    <PayerToggle value={form.electricityPaidBy} onChange={v => set("electricityPaidBy", v)} />
+                  <Field label={c.electricity} sub={c.electricitySub} isMr={isMr}>
+                    <PayerToggle value={form.electricityPaidBy} onChange={v => set("electricityPaidBy", v)} isMr={isMr} />
                   </Field>
-                  <Field label="Water Bill" mr="पाण्याचे बिल">
-                    <PayerToggle value={form.waterPaidBy} onChange={v => set("waterPaidBy", v)} />
+                  <Field label={c.water} sub={c.waterSub} isMr={isMr}>
+                    <PayerToggle value={form.waterPaidBy} onChange={v => set("waterPaidBy", v)} isMr={isMr} />
                   </Field>
                 </SectionCard>
 
@@ -565,39 +570,37 @@ export default function RentAgreement() {
                 <div className="bg-oxblood rounded-2xl p-7 border border-gold/20">
                   <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
-                      <h3 className="text-gold font-bold text-base font-sans tracking-tight">Ready to generate?</h3>
+                      <h3 className={`text-gold font-bold text-base tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaTitle}</h3>
                       <p className="text-gold/50 text-xs font-devanagari mt-1">AI द्वारे Maharashtra करार तयार होईल</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-gold font-bold text-2xl font-sans tracking-tight">₹299</div>
-                      <div className="text-gold/40 text-xs font-sans">one-time</div>
+                      <div className={`text-gold/40 text-xs ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaOnetime}</div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {["5 min mein ready", "Maharashtra format", "Print-ready PDF"].map(tag => (
-                      <span key={tag} className="bg-gold/10 text-gold/70 text-xs px-2.5 py-1 rounded-full font-sans border border-gold/15">{tag}</span>
+                    {c.ctaTags.map(tag => (
+                      <span key={tag} className={`bg-gold/10 text-gold/70 text-xs px-2.5 py-1 rounded-full border border-gold/15 ${isMr ? "font-devanagari" : "font-sans"}`}>{tag}</span>
                     ))}
                   </div>
 
                   <button
                     onClick={handlePayAndGenerate}
                     disabled={!isValid() || paying}
-                    className="w-full py-4 rounded-xl bg-gold text-oxblood-dark font-bold text-sm tracking-wide transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
+                    className={`w-full py-4 rounded-xl bg-gold text-oxblood-dark font-bold text-sm tracking-wide transition-all hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isMr ? "font-devanagari" : "font-sans"}`}
                   >
                     {paying ? (
                       <>
                         <span className="inline-block w-4 h-4 border-2 border-oxblood/30 border-t-oxblood rounded-full animate-spin" />
-                        Opening payment…
+                        <span className={isMr ? "font-devanagari" : "font-sans"}>{c.ctaPaying}</span>
                       </>
-                    ) : (
-                      "Pay ₹299 and Generate Agreement"
-                    )}
+                    ) : c.ctaBtn}
                   </button>
 
                   {!isValid() && (
-                    <p className="text-gold/50 text-xs text-center mt-2 font-sans">
-                      Fill all required fields to continue
+                    <p className={`text-gold/50 text-xs text-center mt-2 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                      {c.ctaWarn}
                     </p>
                   )}
 
@@ -612,9 +615,8 @@ export default function RentAgreement() {
                   )}
                 </div>
 
-                {/* Trust note */}
-                <p className="text-center text-xs text-ink/25 font-sans">
-                  Secure payment via Razorpay · Your data is not stored · 10,000+ agreements generated
+                <p className={`text-center text-xs text-ink/25 ${isMr ? "font-devanagari" : "font-sans"}`}>
+                  {c.trust}
                 </p>
 
               </div>
@@ -625,9 +627,9 @@ export default function RentAgreement() {
               <div className="flex flex-col items-center justify-center py-24 gap-6">
                 <div className="w-16 h-16 rounded-full border-4 border-gold/20 border-t-gold animate-spin" />
                 <div className="text-center">
-                  <h2 className="text-xl font-bold text-oxblood font-sans mb-1">Generating your agreement…</h2>
-                  <p className="text-ink/50 text-sm font-devanagari">तुमचा करार तयार होत आहे, कृपया थांबा</p>
-                  <p className="text-ink/35 text-xs font-sans mt-3">This usually takes 20–40 seconds</p>
+                  <h2 className={`text-xl font-bold text-oxblood mb-1 ${isMr ? "font-devanagari" : "font-sans"}`}>{c.genTitle}</h2>
+                  <p className={`text-ink/50 text-sm ${isMr ? "font-sans" : "font-devanagari"}`}>{c.genSub}</p>
+                  <p className={`text-ink/35 text-xs mt-3 ${isMr ? "font-devanagari" : "font-sans"}`}>{c.genNote}</p>
                 </div>
               </div>
             )}
@@ -635,10 +637,8 @@ export default function RentAgreement() {
             {/* ── DONE STEP ── */}
             {step === "done" && (
               <div>
-                {/* Actions bar (hidden in print) */}
                 <div className="no-print space-y-4 mb-6">
 
-                  {/* Disclaimer banner */}
                   {disclaimer && (
                     <div className="bg-gold/8 border border-gold/20 rounded-xl px-4 py-3.5 flex gap-3">
                       <span className="text-gold/60 flex-shrink-0 mt-0.5">
@@ -654,65 +654,51 @@ export default function RentAgreement() {
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                      onClick={handleDownloadPDF}
-                      className="flex-1 flex items-center justify-center gap-2 bg-oxblood text-gold border border-gold/25 py-3.5 rounded-xl text-sm font-semibold tracking-wide hover:bg-oxblood-dark transition-colors font-sans"
+                      onClick={handleDownloadPdf}
+                      className={`flex-1 flex items-center justify-center gap-2 bg-oxblood text-gold border border-gold/25 py-3.5 rounded-xl text-sm font-semibold tracking-wide hover:bg-oxblood-dark transition-colors ${isMr ? "font-devanagari" : "font-sans"}`}
                     >
                       <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                       </svg>
-                      Download PDF
+                      {c.dlBtn}
                     </button>
                     <button
                       onClick={() => { setStep("form"); setAgreement(""); setDisclaimer(""); }}
-                      className="sm:flex-none flex items-center justify-center gap-2 border border-gold/15 text-ink/50 hover:text-oxblood hover:border-gold/40 py-3.5 px-5 rounded-xl text-sm font-semibold transition-colors font-sans"
+                      className={`sm:flex-none flex items-center justify-center gap-2 border border-gold/15 text-ink/50 hover:text-oxblood hover:border-gold/40 py-3.5 px-5 rounded-xl text-sm font-semibold transition-colors ${isMr ? "font-devanagari" : "font-sans"}`}
                     >
-                      Generate Another
+                      {c.anotherBtn}
                     </button>
                   </div>
                 </div>
 
-                {/* Agreement document */}
-                <div
-                  id="agreement-print-area"
-                  className="bg-white rounded-2xl border border-gold/15 overflow-hidden"
-                >
+                <div id="agreement-print-area" className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
                   <div className="no-print">
                     <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
                     <div className="px-5 py-4 border-b border-gold/10 flex items-center justify-between">
-                      <h2 className="text-oxblood font-bold text-sm font-sans tracking-wide">Agreement Document</h2>
-                      <span className="text-ink/25 text-xs font-sans">Scroll to read · Print to save</span>
+                      <h2 className={`text-oxblood font-bold text-sm tracking-wide ${isMr ? "font-devanagari" : "font-sans"}`}>{c.docTitle}</h2>
+                      <span className={`text-ink/25 text-xs ${isMr ? "font-devanagari" : "font-sans"}`}>{c.docHint}</span>
                     </div>
                   </div>
                   <div className="p-6 sm:p-8">
                     <div id="agreement-scroll" className="max-h-[60vh] overflow-y-auto">
-                      <div
-                        id="agreement-text"
-                        className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-agreement"
-                      >
+                      <div id="agreement-text" className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-agreement">
                         {agreement}
                       </div>
                     </div>
                   </div>
                 </div>
-
               </div>
             )}
 
           </div>
         </main>
 
-        {/* ── Footer ── */}
         <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
-          <p className="text-gold/60 text-sm font-sans">
-            © {year} Mudrankseva. All rights reserved.
-          </p>
-          <p className="text-gold/25 text-xs mt-2 font-sans">
-            Maharashtra Property Services · AI-Powered Legal Documents
-          </p>
+          <p className="text-gold/60 text-sm font-sans">© {year} Mudrankseva. All rights reserved.</p>
+          <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · AI-Powered Legal Documents</p>
         </footer>
 
       </div>

@@ -32,7 +32,7 @@ interface FormData {
   waterPaidBy: string;
 }
 
-function buildPrompt(f: FormData): string {
+function buildPrompt(f: FormData, lang: string): string {
   const aadhaarLine = (label: string, num: string | undefined) =>
     num ? `\n- ${label} Aadhaar No.: XXXX-XXXX-${num.slice(-4)}` : "";
 
@@ -101,7 +101,9 @@ Format the document with:
 - A signature block for Licensor, Licensee, and two witnesses
 - A "IN WITNESS WHEREOF" closing clause
 
-Write formally in English with key financial figures also written in words. The agreement must be ready for printing and notarization.`;
+${lang === "mr"
+    ? "Draft this Leave and License Agreement entirely in formal legal Marathi (Devanagari script) as used in Maharashtra courts. Use proper legal Marathi terminology. All clauses, dates, amounts, and party names must be in Marathi."
+    : "Write formally in English with key financial figures also written in words. The agreement must be ready for printing and notarization."}`;
 }
 
 function extractCity(address: string): string {
@@ -144,12 +146,13 @@ function sanitizeAgreement(text: string): string {
 export async function POST(request: Request) {
   const body = await request.json() as {
     formData: FormData;
+    lang: string;
     razorpayOrderId: string;
     razorpayPaymentId: string;
     razorpaySignature: string;
   };
 
-  const { formData, razorpayOrderId, razorpayPaymentId, razorpaySignature } = body;
+  const { formData, lang = "en", razorpayOrderId, razorpayPaymentId, razorpaySignature } = body;
 
   const isTestBypass =
     process.env.NODE_ENV === "development" && razorpayPaymentId === "test_123";
@@ -164,7 +167,7 @@ export async function POST(request: Request) {
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
-      messages: [{ role: "user", content: buildPrompt(formData) }],
+      messages: [{ role: "user", content: buildPrompt(formData, lang) }],
     });
 
     const raw = message.content[0].type === "text" ? message.content[0].text : "";
