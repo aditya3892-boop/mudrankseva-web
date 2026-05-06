@@ -45,3 +45,5 @@ next-env.d.ts
 
 # Lead capture data (local dev only)
 leads.json
+
+.vercel
