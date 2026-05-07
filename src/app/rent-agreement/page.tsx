@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { type Lang } from "@/lib/content";
 import { generateAgreementPdf } from "@/lib/generateAgreementPdf";
+import { Nav } from "@/components/Nav";
 
 /* ── Razorpay global types ──────────────────────────────────────────── */
 declare global {
@@ -405,6 +406,7 @@ export default function RentAgreement() {
             </span>
           </div>
         </header>
+        <Nav />
 
         {/* ── Page title ── */}
         <div className="no-print border-b border-gold/10 px-6 py-8">

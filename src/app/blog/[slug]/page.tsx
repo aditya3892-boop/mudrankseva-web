@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { BLOG_POSTS, getPostBySlug } from '@/lib/blog'
+import { Nav } from '@/components/Nav'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -38,7 +39,9 @@ export default async function BlogPost({ params }: Props) {
   const paragraphs = post.content.split('\n').filter(line => line.trim() !== '')
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-12">
+    <>
+      <Nav />
+      <main className="max-w-2xl mx-auto px-4 py-12">
       <Link href="/blog" className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block">
         ← ब्लॉग
       </Link>
@@ -86,5 +89,6 @@ export default async function BlogPost({ params }: Props) {
         </div>
       </div>
     </main>
+    </>
   )
 }

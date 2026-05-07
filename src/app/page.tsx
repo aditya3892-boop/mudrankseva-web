@@ -174,6 +174,17 @@ export default function Home() {
         </div>
       </header>
 
+      <nav className="border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 flex items-center gap-6 h-11 text-sm">
+          <a href="/cities/pune" className="text-gray-500 hover:text-gray-900 transition">Cities</a>
+          <a href="/rent-agreement" className="text-gray-500 hover:text-gray-900 transition">Rent Agreement</a>
+          <a href="/sales-deed" className="text-gray-500 hover:text-gray-900 transition">Sale Deed</a>
+          <a href="/calculator" className="text-gray-500 hover:text-gray-900 transition">Calculator</a>
+          <a href="/blog" className="text-gray-500 hover:text-gray-900 transition">Blog</a>
+          <a href="/doorstep-registration" className="text-gray-500 hover:text-gray-900 transition ml-auto font-medium text-amber-600">Doorstep Service</a>
+        </div>
+      </nav>
+
       {/* ── Hero ── */}
       <section className="flex flex-col items-center px-6 py-24 sm:py-32 text-center bg-cream">
         <p className="text-[11px] text-gold/60 font-sans uppercase tracking-[0.2em] mb-8">

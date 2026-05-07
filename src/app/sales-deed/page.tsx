@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { type Lang } from "@/lib/content";
 import { generateSalesDeedPdf } from "@/lib/generateSalesDeedPdf";
+import { Nav } from "@/components/Nav";
 
 declare global {
   interface Window {
@@ -333,6 +334,7 @@ export default function SalesDeed() {
             </span>
           </div>
         </header>
+        <Nav />
 
         {/* ── Page title ── */}
         <div className="no-print border-b border-gold/10 px-6 py-8">

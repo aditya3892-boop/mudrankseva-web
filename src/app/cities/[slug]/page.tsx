@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { CITIES, getCityBySlug } from "@/lib/cities";
+import { Nav } from "@/components/Nav";
 
 export function generateStaticParams() {
   return CITIES.map((c) => ({ slug: c.slug }));
@@ -139,6 +140,7 @@ export default async function CityPage(props: {
           Maharashtra
         </span>
       </header>
+      <Nav />
 
       {/* ── Hero ── */}
       <section className="bg-cream px-6 py-20 sm:py-28 text-center">

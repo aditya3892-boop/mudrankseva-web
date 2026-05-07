@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { getAllPosts } from '@/lib/blog'
+import { Nav } from '@/components/Nav'
 
 export const metadata: Metadata = {
   title: 'ब्लॉग | मुद्रांकसेवा',
@@ -11,7 +12,9 @@ export default function BlogIndex() {
   const posts = getAllPosts()
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-12">
+    <>
+      <Nav />
+      <main className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">ब्लॉग</h1>
       <p className="text-gray-500 mb-10">
         मालमत्ता, भाडे करार आणि कायदेशीर दस्तऐवजांबद्दल मराठीत सोप्या भाषेत माहिती.
@@ -36,5 +39,6 @@ export default function BlogIndex() {
         ))}
       </div>
     </main>
+    </>
   )
 }

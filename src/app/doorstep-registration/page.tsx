@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { Nav } from '@/components/Nav'
 
 const SERVICES = [
   { id: 'rent-agreement', label: 'Rent Agreement', price: 999 },
@@ -51,7 +52,9 @@ export default function DoorstepRegistration() {
 
   if (step === 'done') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <>
+        <Nav />
+        <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="text-5xl mb-4">✅</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Sent</h1>
@@ -74,12 +77,15 @@ export default function DoorstepRegistration() {
           </Link>
         </div>
       </div>
+      </>
     )
   }
 
   if (step === 'confirm') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <>
+        <Nav />
+        <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Confirm your booking</h1>
           <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 mb-6">
@@ -118,11 +124,14 @@ export default function DoorstepRegistration() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen px-4 py-12">
+    <>
+      <Nav />
+      <div className="min-h-screen px-4 py-12">
       <div className="max-w-xl mx-auto">
         <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 mb-6 inline-block">
           ← Back
@@ -265,5 +274,6 @@ export default function DoorstepRegistration() {
         </div>
       </div>
     </div>
+    </>
   )
 }

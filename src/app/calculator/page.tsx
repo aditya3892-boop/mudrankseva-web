@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { CONTENT, DISTRICTS, type Lang } from "@/lib/content";
 import { generateStampDutyReport, type CalcResult } from "@/lib/generateReport";
+import { Nav } from "@/components/Nav";
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 type AreaType = "corporation" | "council" | "rural";
@@ -297,6 +298,7 @@ export default function Calculator() {
           <span className={`hidden sm:inline text-xs text-gold/80 border border-gold/40 rounded-full px-3 py-1 tracking-widest uppercase ${isMr ? "font-devanagari tracking-normal" : ""}`}>{c.headerBadge}</span>
         </div>
       </header>
+      <Nav />
 
       {/* Page title */}
       <div className="border-b border-gold/10 px-6 py-8">
