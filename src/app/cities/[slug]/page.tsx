@@ -125,22 +125,6 @@ export default async function CityPage(props: {
   return (
     <div className="min-h-screen flex flex-col bg-cream text-ink">
 
-      {/* ── Header ── */}
-      <header className="bg-oxblood px-5 py-3 flex items-center justify-between gap-4">
-        <Link href="/" className="rounded-xl overflow-hidden border border-gold/30 bg-cream px-3 py-1.5 flex-shrink-0">
-          <Image
-            src="/logo.jpg"
-            alt="Mudrankseva — मुद्रांकसेवा"
-            width={200}
-            height={48}
-            priority
-            className="h-11 w-auto object-contain"
-          />
-        </Link>
-        <span className="text-xs text-gold/70 border border-gold/35 rounded-full px-3 py-1 tracking-widest uppercase font-sans">
-          Maharashtra
-        </span>
-      </header>
       <Header />
       <Nav />
 
