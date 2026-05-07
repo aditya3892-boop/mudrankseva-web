@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { CITIES, getCityBySlug } from "@/lib/cities";
 import { Nav } from "@/components/Nav";
 import { Header } from "@/components/Header";
+import { CitySchema } from "@/components/city/CitySchema";
 
 export function generateStaticParams() {
   return CITIES.map((c) => ({ slug: c.slug }));
@@ -122,9 +122,26 @@ export default async function CityPage(props: {
   const faqs = [...(city.faqOverrides ?? []), ...DEFAULT_FAQS];
   const year = new Date().getFullYear();
 
+  const baseFaqs = [
+    {
+      q: city.lang === 'mr' ? 'ऑनलाइन भाडे करार कायदेशीर आहे का?' : 'Is an online rent agreement legally valid in Maharashtra?',
+      a: city.lang === 'mr' ? 'होय. महाराष्ट्र e-Registration पोर्टलद्वारे नोंदणीकृत भाडे करार नोंदणी अधिनियम, १९०८ अंतर्गत पूर्णपणे कायदेशीर आहे.' : 'Yes. A rent agreement registered through the Maharashtra e-Registration portal is fully legally valid under the Registration Act, 1908 and the Maharashtra Stamp Act.',
+    },
+    {
+      q: city.lang === 'mr' ? 'घरपोच नोंदणी सेवा उपलब्ध आहे का?' : 'Is doorstep registration available?',
+      a: city.lang === 'mr' ? 'होय, पुणे आणि पिंपरी-चिंचवडमध्ये घरपोच नोंदणी सेवा उपलब्ध आहे. ₹९९९ पासून सुरू.' : 'Yes, doorstep registration is available in Pune and Pimpri-Chinchwad starting from ₹999. We are expanding to more cities soon.',
+    },
+    {
+      q: city.lang === 'mr' ? 'स्टँप ड्युटी किती लागते?' : 'How much stamp duty is required for a rent agreement?',
+      a: city.lang === 'mr' ? 'महाराष्ट्रात ११ महिन्यांच्या भाडे कराराला ₹१०० स्टँप ड्युटी लागते.' : 'In Maharashtra, an 11-month rent agreement attracts ₹100 stamp duty. Mudrankseva calculates this automatically.',
+    },
+    ...(city.faqOverrides ?? []),
+  ]
+
   return (
     <div className="min-h-screen flex flex-col bg-cream text-ink">
 
+      <CitySchema city={city} faqs={baseFaqs} />
       <Header />
       <Nav />
 
