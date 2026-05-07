@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { BLOG_POSTS, getPostBySlug } from '@/lib/blog'
 import { Nav } from '@/components/Nav'
+import { Header } from '@/components/Header'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -40,6 +41,7 @@ export default async function BlogPost({ params }: Props) {
 
   return (
     <>
+      <Header />
       <Nav />
       <main className="max-w-2xl mx-auto px-4 py-12">
       <Link href="/blog" className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block">

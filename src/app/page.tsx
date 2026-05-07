@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { type Lang } from "@/lib/content";
+import { Header } from "@/components/Header";
+import { Nav } from "@/components/Nav";
 
 /* ── Active services ─────────────────────────────────────────────── */
 const ACTIVE = [
@@ -140,50 +142,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-cream text-ink">
 
       {/* ── Header ── */}
-      <header className="bg-oxblood px-5 py-3 flex items-center justify-between gap-4">
-        <div className="rounded-xl overflow-hidden border border-gold/30 bg-cream px-3 py-1.5 flex-shrink-0">
-          <Image
-            src="/logo.jpg"
-            alt="Mudrankseva — मुद्रांकसेवा"
-            width={200}
-            height={48}
-            priority
-            className="h-11 w-auto object-contain"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center rounded-full border border-gold/50 overflow-hidden text-xs font-semibold">
-            <button
-              onClick={() => setLang("en")}
-              className={`px-3.5 py-1.5 transition-colors ${lang === "en" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
-            >
-              EN
-            </button>
-            <span className="w-px h-4 bg-gold/30" />
-            <button
-              onClick={() => setLang("mr")}
-              className={`px-3.5 py-1.5 font-devanagari transition-colors ${lang === "mr" ? "bg-gold text-oxblood-dark" : "text-gold/70 hover:text-gold"}`}
-            >
-              मराठी
-            </button>
-          </div>
-          <span className="hidden sm:inline text-xs text-gold/70 border border-gold/35 rounded-full px-3 py-1 tracking-widest uppercase font-sans">
-            Maharashtra
-          </span>
-        </div>
-      </header>
-
-      <nav className="border-b border-gray-100 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 flex items-center gap-6 h-11 text-sm">
-          <a href="/cities/pune" className="text-gray-500 hover:text-gray-900 transition">Cities</a>
-          <a href="/rent-agreement" className="text-gray-500 hover:text-gray-900 transition">Rent Agreement</a>
-          <a href="/sales-deed" className="text-gray-500 hover:text-gray-900 transition">Sale Deed</a>
-          <a href="/calculator" className="text-gray-500 hover:text-gray-900 transition">Calculator</a>
-          <a href="/blog" className="text-gray-500 hover:text-gray-900 transition">Blog</a>
-          <a href="/doorstep-registration" className="text-gray-500 hover:text-gray-900 transition ml-auto font-medium text-amber-600">Doorstep Service</a>
-        </div>
-      </nav>
+      <Header />
+      <Nav />
 
       {/* ── Hero ── */}
       <section className="flex flex-col items-center px-6 py-24 sm:py-32 text-center bg-cream">

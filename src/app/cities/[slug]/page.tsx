@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CITIES, getCityBySlug } from "@/lib/cities";
 import { Nav } from "@/components/Nav";
+import { Header } from "@/components/Header";
 
 export function generateStaticParams() {
   return CITIES.map((c) => ({ slug: c.slug }));
@@ -140,6 +141,7 @@ export default async function CityPage(props: {
           Maharashtra
         </span>
       </header>
+      <Header />
       <Nav />
 
       {/* ── Hero ── */}

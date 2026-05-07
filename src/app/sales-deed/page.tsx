@@ -6,6 +6,7 @@ import Image from "next/image";
 import { type Lang } from "@/lib/content";
 import { generateSalesDeedPdf } from "@/lib/generateSalesDeedPdf";
 import { Nav } from "@/components/Nav";
+import { Header } from "@/components/Header";
 
 declare global {
   interface Window {
@@ -334,6 +335,7 @@ export default function SalesDeed() {
             </span>
           </div>
         </header>
+        <Header />
         <Nav />
 
         {/* ── Page title ── */}

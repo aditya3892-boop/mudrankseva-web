@@ -6,6 +6,7 @@ import Image from "next/image";
 import { type Lang } from "@/lib/content";
 import { generateGiftDeedPdf } from "@/lib/generateGiftDeedPdf";
 import { Nav } from "@/components/Nav";
+import { Header } from "@/components/Header";
 
 declare global {
   interface Window {
@@ -264,6 +265,7 @@ export default function GiftDeed() {
             <span className={`hidden sm:inline text-xs text-gold/80 border border-gold/40 rounded-full px-3 py-1 tracking-widest uppercase ${isMr ? "font-devanagari tracking-normal" : ""}`}>{c.badge}</span>
           </div>
         </header>
+        <Header />
         <Nav />
 
         <div className="no-print border-b border-gold/10 px-6 py-8">

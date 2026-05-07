@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 import { getAllPosts } from '@/lib/blog'
 import { Nav } from '@/components/Nav'
+import { Header } from '@/components/Header'
 
 export const metadata: Metadata = {
   title: 'ब्लॉग | मुद्रांकसेवा',
@@ -13,6 +14,7 @@ export default function BlogIndex() {
 
   return (
     <>
+      <Header />
       <Nav />
       <main className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">ब्लॉग</h1>
