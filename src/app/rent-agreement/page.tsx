@@ -740,6 +740,49 @@ export default function RentAgreement() {
           </div>
         </main>
 
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">
+          {lang === 'mr' ? 'वारंवार विचारले जाणारे प्रश्न' : 'Frequently Asked Questions'}
+        </h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: lang === 'mr' ? 'ऑनलाइन भाडे करार कायदेशीर आहे का?' : 'Is an online rent agreement legally valid in Maharashtra?',
+              a: lang === 'mr' ? 'होय. महाराष्ट्र e-Registration पोर्टलद्वारे नोंदणीकृत भाडे करार नोंदणी अधिनियम, १९०८ आणि महाराष्ट्र मुद्रांक अधिनियमांतर्गत पूर्णपणे कायदेशीर आहे.' : 'Yes. A rent agreement registered through the Maharashtra e-Registration portal is fully legally valid under the Registration Act, 1908 and the Maharashtra Stamp Act.',
+            },
+            {
+              q: lang === 'mr' ? 'भाडे करारासाठी किती स्टँप ड्युटी लागते?' : 'How much stamp duty is required for a rent agreement?',
+              a: lang === 'mr' ? 'महाराष्ट्रात ११ महिन्यांच्या भाडे कराराला ₹१०० स्टँप ड्युटी लागते. मुद्रांकसेवा आपोआप स्टँप ड्युटी मोजते.' : 'In Maharashtra, an 11-month rent agreement attracts ₹100 stamp duty. Mudrankseva calculates this automatically based on your rent amount.',
+            },
+            {
+              q: lang === 'mr' ? 'नोंदणी किती वेळात होते?' : 'How long does registration take?',
+              a: lang === 'mr' ? 'ऑनलाइन नोंदणी साधारणतः २४ तासांत पूर्ण होते. घरपोच सेवेसाठी ४८ तास लागतात.' : 'Online registration is typically completed within 24 hours. Doorstep service takes up to 48 hours.',
+            },
+            {
+              q: lang === 'mr' ? '११ महिन्यांपेक्षा जास्त कालावधीसाठी काय?' : 'What if my tenancy is longer than 11 months?',
+              a: lang === 'mr' ? '१२ महिने किंवा त्यापेक्षा जास्त कालावधीसाठी SRO मध्ये नोंदणी अनिवार्य आहे. आमची घरपोच सेवा हे सोपे करते.' : 'For 12 months or more, registration at the SRO is mandatory under Maharashtra law. Our doorstep service handles this for you.',
+            },
+            {
+              q: lang === 'mr' ? 'घरपोच सेवा म्हणजे काय?' : 'What is the doorstep registration service?',
+              a: lang === 'mr' ? 'आमचा प्रतिनिधी तुमच्या घरी येतो, बायोमेट्रिक घेतो आणि SRO नोंदणी पूर्ण करतो. ₹९९९ पासून उपलब्ध.' : 'Our executive visits your home, collects biometrics from both parties, and completes SRO registration on your behalf. Available from ₹999.',
+            },
+            {
+              q: lang === 'mr' ? 'कोणती कागदपत्रे लागतात?' : 'What documents are needed for a rent agreement?',
+              a: lang === 'mr' ? 'मालक आणि भाडेकरू दोघांचे आधार कार्ड, मालमत्तेचा पुरावा (लाइट बिल किंवा ७/१२), आणि पासपोर्ट फोटो.' : 'Aadhaar card of both owner and tenant, property proof (electricity bill or 7/12 extract), and passport photos of both parties.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="border border-gray-200 rounded-xl group">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-gray-900 list-none">
+                {faq.q}
+                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
         <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
           <p className="text-gold/60 text-sm font-sans">© {year} Mudrankseva. All rights reserved.</p>
           <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · AI-Powered Legal Documents</p>

@@ -687,6 +687,43 @@ export default function Calculator() {
         </div>
       </main>
 
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: 'How is stamp duty calculated in Maharashtra?',
+              a: 'Stamp duty is calculated as a percentage of the property\'s market value or agreement value, whichever is higher. The rate is 5% in municipal areas and 4% in rural areas for sale deeds.',
+            },
+            {
+              q: 'What is the ready reckoner rate?',
+              a: 'The ready reckoner rate (also called circle rate) is the minimum value set by the Maharashtra government for property transactions in each area. Stamp duty cannot be calculated on a value lower than this.',
+            },
+            {
+              q: 'Is registration fee separate from stamp duty?',
+              a: 'Yes. Registration fee is 1% of the property value (capped at ₹30,000) and is paid separately at the SRO. Stamp duty is paid before registration via franking or online challan.',
+            },
+            {
+              q: 'Does stamp duty apply to rent agreements?',
+              a: 'Yes but at a much lower rate. An 11-month rent agreement attracts ₹100 stamp duty in Maharashtra regardless of the rent amount.',
+            },
+            {
+              q: 'Can I pay stamp duty online in Maharashtra?',
+              a: 'Yes. Stamp duty can be paid online through the Maharashtra government\'s GRAS portal. Mudrankseva handles this automatically as part of the registration process.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="border border-gray-200 rounded-xl group">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-gray-900 list-none">
+                {faq.q}
+                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <footer className="bg-oxblood px-6 py-10 text-center mt-auto">
         <p className="text-gold/60 text-sm font-sans">© {new Date().getFullYear()} {c.footerBrand}. {c.footerRights}</p>
         <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · Digital. Accurate. Compliant.</p>

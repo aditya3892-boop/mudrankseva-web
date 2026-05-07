@@ -454,6 +454,43 @@ export default function Poa() {
           </div>
         </main>
 
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: 'What is a Power of Attorney in Maharashtra?',
+              a: 'A Power of Attorney (POA) is a legal document authorising a person (the agent) to act on behalf of another (the principal) for specific or general purposes including property transactions.',
+            },
+            {
+              q: 'What is the difference between a general and specific POA?',
+              a: 'A general POA grants broad authority to the agent to handle multiple matters. A specific POA limits authority to a single defined transaction, such as selling a particular property.',
+            },
+            {
+              q: 'Does a POA need to be registered?',
+              a: 'A POA used for immovable property transactions must be registered at the SRO under the Registration Act, 1908. A notarised POA is sufficient for most other purposes.',
+            },
+            {
+              q: 'Can a POA be revoked?',
+              a: 'Yes. A POA can be revoked at any time by the principal by executing a revocation deed, unless it is an irrevocable POA granted for consideration.',
+            },
+            {
+              q: 'What documents are needed for a POA?',
+              a: 'Aadhaar and PAN of both principal and agent, passport photos, and details of the specific property or transaction if it is a specific POA.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="border border-gray-200 rounded-xl group">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-gray-900 list-none">
+                {faq.q}
+                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
         <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
           <p className="text-gold/60 text-sm font-sans">© {year} Mudrankseva. All rights reserved.</p>
           <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · AI-Powered Legal Documents</p>

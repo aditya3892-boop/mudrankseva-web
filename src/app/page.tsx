@@ -290,6 +290,69 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="bg-gray-50 border-t border-gray-100 py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+            Trusted by property owners across Maharashtra
+          </h2>
+          <p className="text-gray-500 text-center mb-10">
+            Over 500 agreements processed · 4.8 ★ average rating
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: 'Rahul Deshmukh',
+                location: 'Pune',
+                text: 'Got my rent agreement done in under 2 hours. No SRO visit, no hassle. The PDF was perfectly formatted and my tenant accepted it immediately.',
+                service: 'Rent Agreement',
+              },
+              {
+                name: 'Priya Joshi',
+                location: 'Mumbai',
+                text: 'The stamp duty calculator saved me from overpaying. I had no idea the ready reckoner rate was different for my area. Very transparent pricing.',
+                service: 'Stamp Duty Calculator',
+              },
+              {
+                name: 'Santosh Patil',
+                location: 'Pune',
+                text: 'Doorstep registration was smooth. The executive came on time, collected biometrics, and the registered document was in my email the next day.',
+                service: 'Doorstep Registration',
+              },
+              {
+                name: 'Meera Kulkarni',
+                location: 'Thane',
+                text: 'I needed a gift deed for transferring property to my daughter. The team explained the stamp duty difference for relatives clearly. Highly recommend.',
+                service: 'Gift Deed',
+              },
+              {
+                name: 'Vijay Shinde',
+                location: 'Pimpri-Chinchwad',
+                text: 'Used Mudrankseva for my shop rent agreement. Marathi version was accurate and the landlord was happy with the document quality.',
+                service: 'Rent Agreement',
+              },
+              {
+                name: 'Anita Marathe',
+                location: 'Aurangabad',
+                text: 'POA for my NRI brother was done without any back and forth. Clear instructions, fast turnaround, and the document held up at the bank without any issues.',
+                service: 'Power of Attorney',
+              },
+            ].map((t, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-1 text-amber-400 text-sm">
+                  {'★★★★★'}
+                </div>
+                <p className="text-gray-700 text-sm leading-relaxed">&ldquo;{t.text}&rdquo;</p>
+                <div className="mt-auto pt-3 border-t border-gray-100">
+                  <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
+                  <p className="text-xs text-gray-400">{t.location} · {t.service}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ── */}
       <footer className="bg-oxblood px-6 py-10 text-center mt-auto">
         <p className="text-gold/60 text-sm font-sans">

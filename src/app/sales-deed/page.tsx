@@ -628,6 +628,43 @@ export default function SalesDeed() {
           </div>
         </main>
 
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: 'What is a sale deed in Maharashtra?',
+              a: 'A sale deed is the primary legal document that transfers ownership of a property from seller to buyer. It must be registered at the Sub-Registrar Office (SRO) to be legally valid.',
+            },
+            {
+              q: 'What stamp duty applies to a sale deed in Maharashtra?',
+              a: 'Stamp duty is 5% of the property value in municipal areas and 4% in rural areas. An additional 1% local body tax may apply. Mudrankseva calculates this automatically.',
+            },
+            {
+              q: 'What documents are needed for sale deed registration?',
+              a: 'PAN card, Aadhaar card, property card or 7/12 extract, NOC from society, recent property tax receipt, and passport photos of both buyer and seller.',
+            },
+            {
+              q: 'How long does sale deed registration take?',
+              a: 'With our service, the drafting is done within 24 hours. SRO registration appointment is typically within 3–5 working days.',
+            },
+            {
+              q: 'Can I register a sale deed without visiting the SRO?',
+              a: 'For sale deeds, physical presence at the SRO is required by law for biometric verification. Our doorstep service coordinates the appointment and handles all paperwork.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="border border-gray-200 rounded-xl group">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-gray-900 list-none">
+                {faq.q}
+                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
         <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
           <p className="text-gold/60 text-sm font-sans">© {year} Mudrankseva. All rights reserved.</p>
           <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · AI-Powered Legal Documents</p>

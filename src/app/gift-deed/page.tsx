@@ -467,6 +467,43 @@ export default function GiftDeed() {
           </div>
         </main>
 
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: 'What is a gift deed in Maharashtra?',
+              a: 'A gift deed is a legal document through which a property owner voluntarily transfers ownership to another person without any monetary exchange. It must be registered to be valid.',
+            },
+            {
+              q: 'Is stamp duty applicable on gift deeds?',
+              a: 'Stamp duty on gift deeds in Maharashtra is 2% of the property value if gifted to a blood relative, and 5% if gifted to a non-relative.',
+            },
+            {
+              q: 'Can a gift deed be cancelled?',
+              a: 'A registered gift deed is generally irrevocable. It can only be cancelled by mutual consent of both parties or through a court order in cases of fraud or undue influence.',
+            },
+            {
+              q: 'What documents are needed for a gift deed?',
+              a: 'Aadhaar and PAN of both donor and donee, property documents (7/12, property card), relationship proof if claiming concessional stamp duty, and passport photos.',
+            },
+            {
+              q: 'How long does gift deed registration take?',
+              a: 'Drafting is completed within 24 hours. SRO registration is typically done within 3–5 working days after document verification.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="border border-gray-200 rounded-xl group">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-gray-900 list-none">
+                {faq.q}
+                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <p className="px-5 pb-5 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
         <footer className="no-print bg-oxblood px-6 py-10 text-center mt-auto">
           <p className="text-gold/60 text-sm font-sans">© {year} Mudrankseva. All rights reserved.</p>
           <p className="text-gold/25 text-xs mt-2 font-sans">Maharashtra Property Services · AI-Powered Legal Documents</p>
