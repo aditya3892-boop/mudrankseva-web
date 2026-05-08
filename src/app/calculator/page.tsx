@@ -860,6 +860,85 @@ export default function Calculator() {
         </div>
       )}
     </div>
+
+      {/* SEO Content Section */}
+      <section className="max-w-3xl mx-auto px-4 py-14 border-t border-gray-100">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Stamp Duty in Maharashtra 2026 — Complete Guide</h2>
+
+        <div className="space-y-8 text-gray-600 leading-relaxed">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">What is stamp duty?</h3>
+            <p>Stamp duty is a state government tax paid on property transactions in Maharashtra. It is governed by the Maharashtra Stamp Act and must be paid before or at the time of property registration. Failure to pay stamp duty makes a property document inadmissible as evidence in court.</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Stamp duty rates in Maharashtra 2026</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Area type</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Male buyer</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Female buyer</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {[
+                    ['Municipal Corporation (e.g. PMC, BMC, PCMC)', '6%', '5%'],
+                    ['Municipal Council / Nagar Panchayat', '6%', '5%'],
+                    ['Rural / Gram Panchayat area', '5%', '4%'],
+                  ].map(([area, male, female]) => (
+                    <tr key={area}>
+                      <td className="px-4 py-3 text-gray-600">{area}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{male}</td>
+                      <td className="px-4 py-3 font-medium text-green-700">{female}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-gray-400 mt-2">* Additional metro cess of 1% applies in Mumbai, Pune, Nagpur and Thane municipal areas.</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Women buyer concession</h3>
+            <p>Maharashtra offers a 1% stamp duty concession for female property buyers. If a property is registered solely in a woman&apos;s name, she pays 1% less than a male buyer. On a ₹50 lakh property in Pune, this saves ₹50,000. On a ₹1 crore Mumbai flat, it saves ₹1 lakh. Joint registration with a male buyer does not qualify for this concession.</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">What is the ready reckoner rate?</h3>
+            <p>The ready reckoner rate (also called circle rate or guidance value) is the minimum property value set by the Maharashtra government for each area. Stamp duty cannot be calculated on a value lower than the ready reckoner value. If you buy a property for ₹40 lakh but the ready reckoner value is ₹50 lakh, stamp duty will be calculated on ₹50 lakh. Ready reckoner rates are revised annually by the state government.</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Registration fee in Maharashtra</h3>
+            <p>In addition to stamp duty, a registration fee of 1% of the property value is payable at the Sub-Registrar Office (SRO). Registration fee is capped at ₹30,000 — so for any property above ₹30 lakh, the maximum registration fee is ₹30,000 regardless of the property value.</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Stamp duty on rent agreements in Maharashtra</h3>
+            <p>Rent agreements in Maharashtra attract stamp duty at a much lower rate than property purchases. For an 11-month Leave &amp; License Agreement, stamp duty is a flat ₹100 regardless of rent amount. For agreements of 12 months or more, stamp duty is calculated as a percentage of total consideration (rent × months + 10% of deposit).</p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">How to pay stamp duty in Maharashtra</h3>
+            <p>Stamp duty in Maharashtra can be paid online through the GRAS (Government Receipt Accounting System) portal or through authorised banks and stamp vendors. For property registrations handled through Mudrankseva, stamp duty payment is coordinated as part of the registration process.</p>
+          </div>
+        </div>
+
+        <div className="mt-10 bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <p className="font-semibold text-gray-900 mb-2">Need help with property registration?</p>
+          <p className="text-sm text-gray-600 mb-4">Our team can handle your complete property registration including stamp duty payment and SRO registration.</p>
+          <div className="flex flex-wrap gap-3">
+            <a href="https://wa.me/917755984622?text=Hi, I need help with stamp duty and property registration" className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+              Ask on WhatsApp
+            </a>
+            <a href="/sales-deed" className="border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+              Sale Deed Registration
+            </a>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
