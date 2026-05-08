@@ -25,11 +25,11 @@ export function Nav() {
 
   return (
     <nav className="bg-[#6B1B1B] border-b border-[#7d2020]">
-      <div className="max-w-5xl mx-auto px-4 flex items-center gap-1 h-12">
+      <div className="max-w-5xl mx-auto px-2 flex items-center gap-0.5 h-12 overflow-x-auto scrollbar-hide text-xs sm:text-sm sm:gap-1 sm:px-4">
         <div className="relative mr-2">
           <button
             onClick={() => setCitiesOpen(o => !o)}
-            className="flex items-center gap-1 text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition"
+            className="flex items-center gap-1 text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition"
           >
             Cities
             <svg className={`w-3.5 h-3.5 transition-transform ${citiesOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -53,23 +53,23 @@ export function Nav() {
           )}
         </div>
 
-        <Link href="/rent-agreement" className="text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition">
+        <Link href="/rent-agreement" className="text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition">
           Rent Agreement
         </Link>
-        <Link href="/sales-deed" className="text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition">
+        <Link href="/sales-deed" className="text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition">
           Sale Deed
         </Link>
-        <Link href="/calculator" className="text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition">
+        <Link href="/calculator" className="text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition">
           Calculator
         </Link>
-        <Link href="/blog" className="text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition">
+        <Link href="/blog" className="text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition">
           Blog
         </Link>
 
         <div className="relative">
           <button
             onClick={() => setMoreOpen(o => !o)}
-            className="flex items-center gap-1 text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition"
+            className="flex items-center gap-1 text-[#e8d5b0] hover:text-white text-sm px-2 py-1.5 sm:px-3 rounded hover:bg-white/10 transition"
           >
             More
             <svg className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>

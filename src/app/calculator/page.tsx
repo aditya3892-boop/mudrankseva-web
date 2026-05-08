@@ -106,6 +106,10 @@ function Row({
 /* ── Page ───────────────────────────────────────────────────────────── */
 export default function Calculator() {
   const [lang, setLang]           = useState<Lang>("en");
+  useEffect(() => {
+    const stored = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+    if (stored) setLang(stored)
+  }, [])
   const c  = CONTENT[lang];
   const cc = c.calc;
   const isMr  = lang === "mr";

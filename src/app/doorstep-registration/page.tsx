@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 import { Header } from '@/components/Header'
@@ -36,6 +36,10 @@ const WHAT_NEXT_MR = [
 
 export default function DoorstepRegistration() {
   const [lang, setLang] = useState<'en' | 'mr'>('en')
+  useEffect(() => {
+    const stored = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+    if (stored) setLang(stored)
+  }, [])
   const [service, setService] = useState(SERVICES[0])
   const [step, setStep] = useState<'form' | 'confirm' | 'done'>('form')
   const [form, setForm] = useState({

@@ -142,6 +142,10 @@ function ChevronDown() {
 
 export default function Poa() {
   const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => {
+    const stored = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+    if (stored) setLang(stored)
+  }, [])
   const isMr = lang === "mr";
   const c = PA[lang];
 
