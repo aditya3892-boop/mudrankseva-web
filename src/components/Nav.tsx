@@ -24,8 +24,9 @@ export function Nav() {
   const [moreOpen, setMoreOpen] = useState(false)
 
   return (
+    <div className="overflow-hidden">
     <nav className="bg-[#6B1B1B] border-b border-[#7d2020]">
-      <div className="max-w-5xl mx-auto px-2 flex items-center gap-0.5 h-12 overflow-x-auto scrollbar-hide text-xs sm:text-sm sm:gap-1 sm:px-4">
+      <div className="max-w-5xl mx-auto px-2 flex items-center gap-0.5 h-12 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide whitespace-nowrap text-xs sm:text-sm sm:gap-1 sm:px-4">
         <div className="relative mr-2">
           <button
             onClick={() => setCitiesOpen(o => !o)}
@@ -36,7 +37,7 @@ export function Nav() {
           </button>
           {citiesOpen && (
             <div
-              className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50"
+              className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-[200]"
               onMouseLeave={() => setCitiesOpen(false)}
             >
               {CITIES.map(city => (
@@ -103,5 +104,6 @@ export function Nav() {
         </div>
       </div>
     </nav>
+    </div>
   )
 }

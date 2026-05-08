@@ -145,6 +145,14 @@ export default function Poa() {
   useEffect(() => {
     const stored = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
     if (stored) setLang(stored)
+
+    const handleLangChange = () => {
+      const updated = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+      if (updated) setLang(updated)
+    }
+
+    window.addEventListener('mudrankseva-lang-change', handleLangChange)
+    return () => window.removeEventListener('mudrankseva-lang-change', handleLangChange)
   }, [])
   const isMr = lang === "mr";
   const c = PA[lang];

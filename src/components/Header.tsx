@@ -61,6 +61,7 @@ export function Header() {
   function handleLangToggle(newLang: 'en' | 'mr') {
     setLang(newLang)
     localStorage.setItem('mudrankseva-lang', newLang)
+    window.dispatchEvent(new Event('mudrankseva-lang-change'))
     if (newLang === 'mr') {
       const marathiPath = getMarathiPath(pathname)
       if (marathiPath !== pathname) router.push(marathiPath)
