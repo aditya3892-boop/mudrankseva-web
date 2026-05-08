@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { type Lang } from "@/lib/content";
@@ -134,6 +134,18 @@ const COMING = [
 /* ── Page ─────────────────────────────────────────────────────────── */
 export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => {
+    const stored = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+    if (stored) setLang(stored)
+
+    const handleLangChange = () => {
+      const updated = localStorage.getItem('mudrankseva-lang') as 'en' | 'mr' | null
+      if (updated) setLang(updated)
+    }
+
+    window.addEventListener('mudrankseva-lang-change', handleLangChange)
+    return () => window.removeEventListener('mudrankseva-lang-change', handleLangChange)
+  }, [])
   const isMr = lang === "mr";
   const hFont = isMr ? "font-devanagari" : "font-sans";
   const year = new Date().getFullYear();
