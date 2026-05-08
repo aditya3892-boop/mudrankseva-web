@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Noto_Sans_Devanagari } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 import "./globals.css";
 
 const geist = Geist({
@@ -52,7 +53,10 @@ export default function RootLayout({
       lang="mr"
       className={`${geist.variable} ${notoDevanagari.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <WhatsAppButton />
+      </body>
       {process.env.NODE_ENV === "production" && (
         <GoogleAnalytics gaId="G-N1SDG0DZGR" />
       )}

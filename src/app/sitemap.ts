@@ -27,6 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/sales-deed`,    lastModified: now, changeFrequency: "weekly",  priority: 0.9 },
     { url: `${BASE}/gift-deed`,     lastModified: now, changeFrequency: "weekly",  priority: 0.9 },
     { url: `${BASE}/poa`,           lastModified: now, changeFrequency: "weekly",  priority: 0.9 },
+    { url: `${BASE}/about`,          lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/contact`,        lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/privacy-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/terms`,          lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/refund-policy`,  lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/disclaimer`,     lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     ...cityEntries,
     ...blogEntries,
   ];

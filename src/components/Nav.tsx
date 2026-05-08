@@ -13,8 +13,15 @@ const CITIES = [
   { name: 'Pimpri-Chinchwad', slug: 'pimpri-chinchwad' },
 ]
 
+const MORE_LINKS = [
+  { name: 'About Us', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'Disclaimer', href: '/disclaimer' },
+]
+
 export function Nav() {
   const [citiesOpen, setCitiesOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   return (
     <nav className="bg-[#6B1B1B] border-b border-[#7d2020]">
@@ -58,6 +65,33 @@ export function Nav() {
         <Link href="/blog" className="text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition">
           Blog
         </Link>
+
+        <div className="relative">
+          <button
+            onClick={() => setMoreOpen(o => !o)}
+            className="flex items-center gap-1 text-[#e8d5b0] hover:text-white text-sm px-3 py-1.5 rounded hover:bg-white/10 transition"
+          >
+            More
+            <svg className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          {moreOpen && (
+            <div
+              className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50"
+              onMouseLeave={() => setMoreOpen(false)}
+            >
+              {MORE_LINKS.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMoreOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800 transition"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="ml-auto">
           <Link
