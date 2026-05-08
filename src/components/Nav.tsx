@@ -50,8 +50,8 @@ export function Nav() {
       if (citiesRef.current && !citiesRef.current.contains(e.target as Node)) setCitiesOpen(false)
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
   }, [])
 
   return (
