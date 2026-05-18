@@ -46,11 +46,36 @@ const INITIAL: SDFormFields = {
 
 const PAY_MODES: PayMode[] = ["Cash", "Cheque", "NEFT", "RTGS"];
 
+type Plan = "basic" | "saver" | "pro" | "premium";
+
+const PLANS = [
+  {
+    id: "basic" as Plan, amountPaise: 49900, comingSoon: false,
+    en: { name: "Basic",     price: "₹499",          sub: "1 Draft · one-time",              tags: ["Maharashtra format", "Print-ready PDF"] },
+    mr: { name: "बेसिक",    price: "₹४९९",          sub: "१ मसुदा · एकवेळ",                tags: ["महाराष्ट्र फॉर्मॅट", "प्रिंट-रेडी PDF"] },
+  },
+  {
+    id: "saver" as Plan, amountPaise: 99900, comingSoon: true,
+    en: { name: "Saver",     price: "₹999",           sub: "3 Drafts · one-time",             tags: ["Share with colleagues", "Save ₹500"] },
+    mr: { name: "सेव्हर",   price: "₹९९९",           sub: "३ मसुदे · एकवेळ",                tags: ["सहकाऱ्यांसह शेअर करा", "₹५०० बचत"] },
+  },
+  {
+    id: "pro" as Plan, amountPaise: 249900, comingSoon: true,
+    en: { name: "Pro",       price: "₹2,499/mo",      sub: "Up to 30 Drafts/month",           tags: ["For brokers & CAs", "Best for high volume"] },
+    mr: { name: "प्रो",      price: "₹२,४९९/महिना",  sub: "३०/महिना पर्यंत मसुदे",          tags: ["दलाल व CA साठी", "जास्त वापरासाठी सर्वोत्तम"] },
+  },
+  {
+    id: "premium" as Plan, amountPaise: 299900, comingSoon: true,
+    en: { name: "Premium",   price: "₹2,999",         sub: "1 Draft + Doorstep Registration", tags: ["Executive visits home", "SRO biometric included"] },
+    mr: { name: "प्रीमियम", price: "₹२,९९९",         sub: "१ मसुदा + घरपोच नोंदणी",        tags: ["अधिकारी घरी येतात", "SRO बायोमेट्रिक समाविष्ट"] },
+  },
+];
+
 const SD = {
   en: {
     back: "← Back", badge: "Maharashtra",
     h1: "Sale Deed Generator",
-    subtitle: "Maharashtra Sale Deed — ₹499",
+    subtitle: "Maharashtra Sale Deed — from ₹499",
     sellerSec: "Seller Details",      sellerSub: "विक्रेत्याची माहिती",
     buyerSec: "Buyer Details",        buyerSub: "खरेदीदाराची माहिती",
     propertySec: "Property Details",  propertySub: "मालमत्तेची माहिती",
@@ -69,7 +94,9 @@ const SD = {
     optional: "optional",
     ctaTitle: "Ready to generate?", ctaOnetime: "one-time",
     ctaTags: ["10 min mein ready", "Maharashtra format", "Print-ready PDF"],
-    ctaBtn: "Pay ₹499 and Generate Sale Deed",
+    ctaBtn: (price: string) => `Pay ${price} and Generate Sale Deed`,
+    planTitle: "Choose Your Plan", planTitleSub: "तुमची योजना निवडा",
+    planComingSoon: "Coming Soon",
     ctaPaying: "Opening payment…",
     ctaWarn: "Fill all required fields to continue",
     genTitle: "Generating your sale deed…",
@@ -82,7 +109,7 @@ const SD = {
   mr: {
     back: "← मागे", badge: "महाराष्ट्र",
     h1: "खरेदी-विक्री दस्तऐवज जनरेटर",
-    subtitle: "महाराष्ट्र Sale Deed — ₹४९९",
+    subtitle: "महाराष्ट्र Sale Deed — ₹४९९ पासून",
     sellerSec: "विक्रेत्याची माहिती",    sellerSub: "Seller Details",
     buyerSec: "खरेदीदाराची माहिती",      buyerSub: "Buyer Details",
     propertySec: "मालमत्तेची माहिती",     propertySub: "Property Details",
@@ -101,7 +128,9 @@ const SD = {
     optional: "ऐच्छिक",
     ctaTitle: "तयार आहात?", ctaOnetime: "एकवेळ",
     ctaTags: ["10 मिनिटात तयार", "महाराष्ट्र फॉर्मॅट", "प्रिंट-रेडी PDF"],
-    ctaBtn: "₹499 भरा आणि Sale Deed मिळवा",
+    ctaBtn: (price: string) => `${price} भरा आणि Sale Deed मिळवा`,
+    planTitle: "तुमची योजना निवडा", planTitleSub: "Choose Your Plan",
+    planComingSoon: "लवकरच येत आहे",
     ctaPaying: "पेमेंट उघडत आहे…",
     ctaWarn: "पुढे जाण्यासाठी सर्व आवश्यक माहिती भरा",
     genTitle: "तुमचे sale deed तयार होत आहे…",
@@ -111,7 +140,7 @@ const SD = {
     docTitle: "Sale Deed दस्तऐवज", docHint: "वाचण्यासाठी स्क्रोल करा",
     trust: "Razorpay द्वारे सुरक्षित पेमेंट · डेटा साठवला जात नाही",
   },
-} as const;
+};
 
 /* ── Helper components ── */
 function Field({ label, sub, children, optional, isMr = false }: {
@@ -180,6 +209,10 @@ export default function SalesDeed() {
   const [error, setError]           = useState("");
   const [paying, setPaying]         = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan>("basic");
+
+  const planData = PLANS.find(p => p.id === selectedPlan)!;
+  const planContent = planData[lang];
 
   useEffect(() => {
     const s = document.createElement("script");
@@ -245,7 +278,7 @@ export default function SalesDeed() {
       const orderRes = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 49900, product: "sd" }),
+        body: JSON.stringify({ amount: PLANS.find(p => p.id === selectedPlan)!.amountPaise, product: "sd" }),
       });
       const orderJson = await orderRes.json() as { orderId?: string; amount?: number; currency?: string; keyId?: string; error?: string };
       if (!orderRes.ok) throw new Error(orderJson.error ?? "Failed to create order");
@@ -285,7 +318,7 @@ export default function SalesDeed() {
       setPaying(false);
       setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
     }
-  }, [form, lang, isValid, paying, triggerPdf, callGenerateApi]);
+  }, [form, lang, isValid, paying, triggerPdf, callGenerateApi, selectedPlan]);
 
   const handleTestGenerate = useCallback(async () => {
     console.log("[TEST MODE/sales-deed] handleTestGenerate called");
@@ -466,6 +499,60 @@ export default function SalesDeed() {
                   </Field>
                 </SectionCard>
 
+                {/* Plan Picker */}
+                <div className="bg-white rounded-2xl border border-gold/15 overflow-hidden">
+                  <div className="h-[2px] bg-gradient-to-r from-gold/40 via-gold/70 to-gold/40" />
+                  <div className="px-6 py-4 border-b border-gold/10 flex items-center gap-2.5">
+                    <span className={`font-semibold text-oxblood text-sm tracking-tight ${isMr ? "font-devanagari" : "font-sans"}`}>{c.planTitle}</span>
+                    <span className={`text-ink/25 text-xs ${isMr ? "font-sans" : "font-devanagari"}`}>{c.planTitleSub}</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {PLANS.map(plan => {
+                      const pc = plan[lang];
+                      const isSelected = selectedPlan === plan.id;
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => !plan.comingSoon && setSelectedPlan(plan.id)}
+                          className={`w-full text-left rounded-xl border p-4 transition-all ${
+                            plan.comingSoon
+                              ? "bg-white border-gold/20 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-gold/5 border-gold/60"
+                              : "bg-white border-gold/20 hover:border-gold/40"
+                          }`}
+                        >
+                          <div className={plan.comingSoon ? "opacity-50" : ""}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-oxblood bg-oxblood" : "border-gold/40"}`}>
+                                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-gold" />}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`font-semibold text-sm text-oxblood ${isMr ? "font-devanagari" : "font-sans"}`}>{pc.name}</span>
+                                  {plan.comingSoon && (
+                                    <span className="text-[10px] font-semibold font-sans bg-ink/8 text-ink/50 border border-ink/15 rounded-full px-2 py-0.5 tracking-wide">{c.planComingSoon}</span>
+                                  )}
+                                </div>
+                                <p className={`text-xs text-ink/50 mt-0.5 ${isMr ? "font-devanagari" : "font-sans"}`}>{pc.sub}</p>
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {pc.tags.map(tag => (
+                                    <span key={tag} className={`text-[10px] bg-gold/8 text-ink/50 border border-gold/15 rounded-full px-2 py-0.5 ${isMr ? "font-devanagari" : "font-sans"}`}>{tag}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <span className={`flex-shrink-0 font-bold text-base font-sans ${plan.comingSoon ? "text-ink/40" : "text-oxblood"}`}>{pc.price}</span>
+                          </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Error */}
                 {error && (
                   <div className="bg-oxblood/5 border border-oxblood/15 rounded-xl px-4 py-3 text-sm text-oxblood font-sans">
@@ -489,7 +576,7 @@ export default function SalesDeed() {
                     </div>
                     {!isTestMode && (
                       <div className="text-right flex-shrink-0">
-                        <div className="text-gold font-bold text-2xl font-sans tracking-tight">₹499</div>
+                        <div className="text-gold font-bold text-2xl font-sans tracking-tight">{planContent.price}</div>
                         <div className={`text-gold/40 text-xs ${isMr ? "font-devanagari" : "font-sans"}`}>{c.ctaOnetime}</div>
                       </div>
                     )}
@@ -529,7 +616,7 @@ export default function SalesDeed() {
                           <span className="inline-block w-4 h-4 border-2 border-oxblood/30 border-t-oxblood rounded-full animate-spin" />
                           <span className={isMr ? "font-devanagari" : "font-sans"}>{c.ctaPaying}</span>
                         </>
-                      ) : c.ctaBtn}
+                      ) : c.ctaBtn(planContent.price)}
                     </button>
                   )}
 

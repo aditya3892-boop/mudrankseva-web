@@ -34,7 +34,7 @@ export const CITIES: CityData[] = [
     tagline: 'Rent agreements, property registration & legal documents in Pune',
     description: 'Mudrankseva offers same-day rent agreement and property document services across Pune. Get your documents notarised or registered without leaving your home.',
     metaTitle: 'Rent Agreement & Property Registration in Pune | Mudrankseva',
-    metaDescription: 'Instant online rent agreement in Pune starting ₹299. Property registration, sale deed, POA & more. Doorstep service available. Book in 2 minutes.',
+    metaDescription: 'Instant online rent agreement in Pune from ₹299. Property registration, sale deed, POA & more. Doorstep service available. Book in 2 minutes.',
     canonicalSlug: 'pune',
     sroOffices: [
       { name: 'SRO Pune-1 (Camp)', address: 'Survey No. 123, Camp, Pune 411001' },

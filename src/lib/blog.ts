@@ -225,7 +225,7 @@ For agreements of 12 months or more, registration at the SRO is mandatory under 
 
 ## Getting Your Agreement Online
 
-The traditional process involves hiring a lawyer, paying stamp duty separately and visiting the SRO — typically 3 to 5 days and ₹1,000 or more in fees. Mudrankseva generates a court-compliant Maharashtra Leave and License Agreement in minutes. Pay ₹299, fill the form, download your PDF. For registered agreements, our doorstep service handles the SRO appointment and biometrics at your home.
+The traditional process involves hiring a lawyer, paying stamp duty separately and visiting the SRO — typically 3 to 5 days and ₹1,000 or more in fees. Mudrankseva generates a court-compliant Maharashtra Leave and License Agreement in minutes. Choose a plan from ₹299, fill the form, download your PDF. For registered agreements, our doorstep service handles the SRO appointment and biometrics at your home.
 
 ## Common Mistakes That Invalidate Rent Agreements
 
